@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <tuple>
 #include <float_grad.h>
+#include <helper_math.h>
 
 // CUDA kernel
 template <typename FloatType=float>
