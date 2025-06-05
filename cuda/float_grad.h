@@ -327,15 +327,11 @@ struct FloatGradArray {
     FloatGradArray(FloatType* data, FloatType* grad)
         : data_ptr(data), grad_ptr(grad) {}
 
-    FloatGradRef<FloatType> operator[](int index) & {
+    FloatGradRef<FloatType> operator[](int index) {
         return FloatGradRef<FloatType>(data_ptr + index, grad_ptr + index);
     }
 
-    FloatGrad<FloatType> operator[](int index) && {
-        return FloatGrad<FloatType>{data_ptr[index], grad_ptr[index]};
-    }
-
-    FloatGrad<FloatType> operator[](int index) const & {
+    FloatGrad<FloatType> operator[](int index) const {
         return FloatGrad<FloatType>{data_ptr[index], grad_ptr[index]};
     }
 };
