@@ -2,12 +2,12 @@
 #include <cuda_runtime.h>
 #include <tuple>
 #include <float_grad.h>
-#include <helper_math.h>
 
 // CUDA kernel
-template <typename FloatType=float>
+template <typename FloatContainer=float*>
 __global__ void matmul_kernel(
-        const float* A, 
+        const FloatContainer A
+        const FloatContainer B,
         const float* B, 
         float* C, 
         int M, int N, int K) {
@@ -55,7 +55,7 @@ torch::Tensor matmul_cuda(torch::Tensor A, torch::Tensor B) {
     return C;
 }
 
-torch::Tensor matmul_cuda_floatgrad(torch::Tensor A, torch::Tensor B) {
+torch::Tensor matmul_cuda_jvp(torch::Tensor A, torch::Tensor B) {
     TORCH_CHECK(A.dtype() == torch::kFloat32, "A must be float32");
     TORCH_CHECK(B.dtype() == torch::kFloat32, "B must be float32");
     TORCH_CHECK(A.device().is_cuda(), "A must be a CUDA tensor");
@@ -85,10 +85,3 @@ torch::Tensor matmul_cuda_floatgrad(torch::Tensor A, torch::Tensor B) {
 
     return C;
 }
-
-// If needed: return a tuple
-std::tuple<torch::Tensor> matmul_cuda_tuple(torch::Tensor A, torch::Tensor B) {
-    auto C = matmul_cuda(A, B);
-    return std::make_tuple(C);
-}
-

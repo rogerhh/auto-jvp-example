@@ -9,8 +9,9 @@ setup(
         CUDAExtension(
             name="auto_jvp_example._C",
             sources=[
-                "matmul_kernel.cu",
-                "ext.cpp"
+                "cuda/test_floatgrad.cu",
+                # "matmul_kernel.cu",
+                "ext.cu"
             ],
             extra_compile_args={
                 "nvcc": ["-O3", "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)))],

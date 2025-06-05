@@ -179,7 +179,7 @@ struct FloatGrad {
     }
 };
 
-FloatGrad sqrtf(const FloatGrad& x) {
+inline __host__ __device__ FloatGrad sqrtf(const FloatGrad& x) {
     float sqrt_x = sqrtf(x.data);
     return FloatGrad(sqrt_x, x.grad / (2.0f * sqrt_x));
 }
