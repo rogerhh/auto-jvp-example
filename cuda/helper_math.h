@@ -56,18 +56,16 @@ typedef unsigned short ushort;
 // host implementations of CUDA functions
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FloatType>
-inline FloatType fminf(FloatType a, FloatType b) { return a < b ? a : b; }
+inline float fminf(float a, float b) { return a < b ? a : b; }
 
-template <typename FloatType>
-inline FloatType fmaxf(FloatType a, FloatType b) { return a > b ? a : b; }
+inline float fmaxf(float a, float b) { return a > b ? a : b; }
 
 inline int max(int a, int b) { return a > b ? a : b; }
 
 inline int min(int a, int b) { return a < b ? a : b; }
 
-template <typename FloatType>
-inline FloatType rsqrtf(FloatType x) { return 1.0f / sqrtf(x); }
+inline float rsqrtf(float x) { return 1.0f / sqrtf(x); }
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,8 +81,19 @@ inline __host__ __device__ float2 make_float2(uint2 a) {
   return make_float2(float(a.x), float(a.y));
 }
 
-inline __host__ __device__ FloatGrad<float2> make_float2(FloatGrad<float> a, FloatGrad<float> b) {
-  return FloatGrad<float2>{make_float2(a.data, b.data), make_float2(a.grad, b.grad)};
+inline __host__ __device__ FloatGrad<float2> make_float2(
+        FloatGradRef<float> x, FloatGradRef<float> y) {
+  return FloatGrad<float2>{make_float2(*x.data_ptr, *y.data_ptr), 
+                           make_float2(*x.grad_ptr, *y.grad_ptr)};
+}
+inline __host__ __device__ FloatGrad<float2> make_float2(FloatGrad<float> x, FloatGrad<float> y) {
+  return FloatGrad<float2>{make_float2(x.data, y.data), make_float2(x.grad, y.grad)};
+}
+inline __host__ __device__ FloatGrad<float2> make_float2(FloatGrad<float> a) {
+  return make_float2(a, a);
+}
+inline __host__ __device__ FloatGrad<float2> make_float2(FloatGrad<float3> a) {
+  return make_float2(FloatGrad<float>(a.x), FloatGrad<float>(a.y));
 }
 
 inline __host__ __device__ int2 make_int2(int s) { return make_int2(s, s); }
@@ -92,9 +101,15 @@ inline __host__ __device__ int2 make_int2(int3 a) { return make_int2(a.x, a.y); 
 inline __host__ __device__ int2 make_int2(uint2 a) { return make_int2(int(a.x), int(a.y)); }
 inline __host__ __device__ int2 make_int2(float2 a) { return make_int2(int(a.x), int(a.y)); }
 
+inline __host__ __device__ int2 make_int2(FloatGrad<float2> a) {
+  return make_int2(int(a.x), int(a.y));
+}
+
 inline __host__ __device__ uint2 make_uint2(uint s) { return make_uint2(s, s); }
 inline __host__ __device__ uint2 make_uint2(uint3 a) { return make_uint2(a.x, a.y); }
 inline __host__ __device__ uint2 make_uint2(int2 a) { return make_uint2(uint(a.x), uint(a.y)); }
+
+///////////////////////////////////////////////////////////////////////////////
 
 inline __host__ __device__ float3 make_float3(float s) { return make_float3(s, s, s); }
 inline __host__ __device__ float3 make_float3(float2 a) { return make_float3(a.x, a.y, 0.0f); }
@@ -107,6 +122,32 @@ inline __host__ __device__ float3 make_float3(int3 a) {
 }
 inline __host__ __device__ float3 make_float3(uint3 a) {
   return make_float3(float(a.x), float(a.y), float(a.z));
+}
+
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGradRef<float> x,
+                                                         FloatGradRef<float> y,
+                                                         FloatGradRef<float> z) {
+  return FloatGrad<float3>{make_float3(*x.data_ptr, *y.data_ptr, *z.data_ptr),
+                           make_float3(*x.grad_ptr, *y.grad_ptr, *z.grad_ptr)};
+}
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGrad<float> x,
+                                                         FloatGrad<float> y,
+                                                         FloatGrad<float> z) {
+  return FloatGrad<float3>{make_float3(x.data, y.data, z.data),
+                           make_float3(x.grad, y.grad, z.grad)};
+}
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGrad<float> s) {
+  return make_float3(s, s, s);
+}
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGrad<float2> a) {
+  return make_float3(FloatGrad<float>(a.x), FloatGrad<float>(a.y), FloatGrad<float>(0.0f));
+}
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGrad<float2> a,
+                                                         FloatGrad<float> s) {
+  return make_float3(FloatGrad<float>(a.x), FloatGrad<float>(a.y), s);
+}
+inline __host__ __device__ FloatGrad<float3> make_float3(FloatGrad<float4> a) {
+  return make_float3(FloatGrad<float>(a.x), FloatGrad<float>(a.y), FloatGrad<float>(a.z));
 }
 
 inline __host__ __device__ int3 make_int3(int s) { return make_int3(s, s, s); }
@@ -127,6 +168,8 @@ inline __host__ __device__ uint3 make_uint3(int3 a) {
   return make_uint3(uint(a.x), uint(a.y), uint(a.z));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 inline __host__ __device__ float4 make_float4(float s) { return make_float4(s, s, s, s); }
 inline __host__ __device__ float4 make_float4(float3 a) { return make_float4(a.x, a.y, a.z, 0.0f); }
 inline __host__ __device__ float4 make_float4(float3 a, float w) {
@@ -139,6 +182,32 @@ inline __host__ __device__ float4 make_float4(uint4 a) {
   return make_float4(float(a.x), float(a.y), float(a.z), float(a.w));
 }
 
+inline __host__ __device__ FloatGrad<float4> make_float4(FloatGradRef<float> x,
+                                                         FloatGradRef<float> y,
+                                                         FloatGradRef<float> z,
+                                                         FloatGradRef<float> w) {
+  return FloatGrad<float4>{make_float4(*x.data_ptr, *y.data_ptr, *z.data_ptr, *w.data_ptr),
+                           make_float4(*x.grad_ptr, *y.grad_ptr, *z.grad_ptr, *w.grad_ptr)};
+}
+inline __host__ __device__ FloatGrad<float4> make_float4(FloatGrad<float> x,
+                                                         FloatGrad<float> y,
+                                                         FloatGrad<float> z,
+                                                         FloatGrad<float> w) {
+  return FloatGrad<float4>{make_float4(x.data, y.data, z.data, w.data),
+                           make_float4(x.grad, y.grad, z.grad, w.grad)};
+}
+inline __host__ __device__ FloatGrad<float4> make_float4(FloatGrad<float> s) {
+  return make_float4(s, s, s, s);
+}
+inline __host__ __device__ FloatGrad<float4> make_float4(FloatGrad<float3> a) {
+  return make_float4(FloatGrad<float>(a.x), FloatGrad<float>(a.y), FloatGrad<float>(a.z),
+                     FloatGrad<float>(0.0f));
+}
+inline __host__ __device__ FloatGrad<float4> make_float4(FloatGrad<float3> a,
+                                                  FloatGrad<float> w) {
+  return make_float4(FloatGrad<float>(a.x), FloatGrad<float>(a.y), FloatGrad<float>(a.z), w);
+}
+
 inline __host__ __device__ int4 make_int4(int s) { return make_int4(s, s, s, s); }
 inline __host__ __device__ int4 make_int4(int3 a) { return make_int4(a.x, a.y, a.z, 0); }
 inline __host__ __device__ int4 make_int4(int3 a, int w) { return make_int4(a.x, a.y, a.z, w); }
@@ -148,6 +217,12 @@ inline __host__ __device__ int4 make_int4(uint4 a) {
 inline __host__ __device__ int4 make_int4(float4 a) {
   return make_int4(int(a.x), int(a.y), int(a.z), int(a.w));
 }
+
+inline __host__ __device__ int4 make_int4(FloatGrad<float4> a) {
+  return make_int4(int(a.x), int(a.y), int(a.z), int(a.w));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 inline __host__ __device__ uint4 make_uint4(uint s) { return make_uint4(s, s, s, s); }
 inline __host__ __device__ uint4 make_uint4(uint3 a) { return make_uint4(a.x, a.y, a.z, 0); }
@@ -162,14 +237,14 @@ inline __host__ __device__ uint4 make_uint4(int4 a) {
 // negate
 ////////////////////////////////////////////////////////////////////////////////
 
-inline __host__ __device__ float2 operator-(float2 &a) { return make_float2(-a.x, -a.y); }
-inline __host__ __device__ int2 operator-(int2 &a) { return make_int2(-a.x, -a.y); }
-inline __host__ __device__ float3 operator-(float3 &a) { return make_float3(-a.x, -a.y, -a.z); }
-inline __host__ __device__ int3 operator-(int3 &a) { return make_int3(-a.x, -a.y, -a.z); }
-inline __host__ __device__ float4 operator-(float4 &a) {
+inline __host__ __device__ float2 operator-(const float2 &a) { return make_float2(-a.x, -a.y); }
+inline __host__ __device__ int2 operator-(const int2 &a) { return make_int2(-a.x, -a.y); }
+inline __host__ __device__ float3 operator-(const float3 &a) { return make_float3(-a.x, -a.y, -a.z); }
+inline __host__ __device__ int3 operator-(const int3 &a) { return make_int3(-a.x, -a.y, -a.z); }
+inline __host__ __device__ float4 operator-(const float4 &a) {
   return make_float4(-a.x, -a.y, -a.z, -a.w);
 }
-inline __host__ __device__ int4 operator-(int4 &a) { return make_int4(-a.x, -a.y, -a.z, -a.w); }
+inline __host__ __device__ int4 operator-(const int4 &a) { return make_int4(-a.x, -a.y, -a.z, -a.w); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // addition
@@ -775,6 +850,51 @@ inline __host__ __device__ float4 fminf(float4 a, float4 b) {
   return make_float4(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z), fminf(a.w, b.w));
 }
 
+inline FloatGrad<float> fminf(FloatGrad<float> a, FloatGrad<float> b) {
+  return a < b ? a : b;
+}
+inline FloatGradRef<float> fminf(FloatGradRef<float> a, FloatGradRef<float> b) {
+  return a < b ? a : b;
+}
+inline __host__ __device__ FloatGrad<float2> fminf(
+        FloatGrad<float2> a, FloatGrad<float2> b) {
+  return make_float2(fminf(a.x, b.x), 
+                     fminf(a.y, b.y));
+}
+inline __host__ __device__ FloatGrad<float2> fminf(
+        FloatGradRef<float2> a, FloatGradRef<float2> b) {
+  return make_float2(fminf(a.x, b.x), 
+                     fminf(a.y, b.y));
+}
+inline __host__ __device__ FloatGrad<float3> fminf(
+        FloatGrad<float3> a, FloatGrad<float3> b) {
+  return make_float3(fminf(a.x, b.x), 
+                     fminf(a.y, b.y),
+                     fminf(a.z, b.z));
+}
+inline __host__ __device__ FloatGrad<float3> fminf(
+        FloatGradRef<float3> a, FloatGradRef<float3> b) {
+  return make_float3(fminf(a.x, b.x), 
+                     fminf(a.y, b.y),
+                     fminf(a.z, b.z));
+}
+inline __host__ __device__ FloatGrad<float4> fminf(
+        FloatGrad<float4> a, FloatGrad<float4> b) {
+  return make_float4(fminf(a.x, b.x), 
+                     fminf(a.y, b.y),
+                     fminf(a.z, b.z),
+                     fminf(a.w, b.w));
+}
+inline __host__ __device__ FloatGrad<float4> fminf(
+        FloatGradRef<float4> a, FloatGradRef<float4> b) {
+  return make_float4(fminf(a.x, b.x), 
+                     fminf(a.y, b.y),
+                     fminf(a.z, b.z),
+                     fminf(a.w, b.w));
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 inline __host__ __device__ int2 min(int2 a, int2 b) {
   return make_int2(min(a.x, b.x), min(a.y, b.y));
 }
@@ -809,6 +929,51 @@ inline __host__ __device__ float4 fmaxf(float4 a, float4 b) {
   return make_float4(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z), fmaxf(a.w, b.w));
 }
 
+inline FloatGradRef<float> fmaxf(FloatGradRef<float> a, FloatGradRef<float> b) {
+  return a > b ? a : b;
+}
+inline FloatGrad<float> fmaxf(FloatGrad<float> a, FloatGrad<float> b) {
+  return a > b ? a : b;
+}
+inline __host__ __device__ FloatGrad<float2> fmaxf(
+        FloatGrad<float2> a, FloatGrad<float2> b) {
+  return make_float2(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y));
+}
+inline __host__ __device__ FloatGrad<float2> fmaxf(
+        FloatGradRef<float2> a, FloatGradRef<float2> b) {
+  return make_float2(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y));
+}
+inline __host__ __device__ FloatGrad<float3> fmaxf(
+        FloatGrad<float3> a, FloatGrad<float3> b) {
+  return make_float3(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y),
+                     fmaxf(a.z, b.z));
+}
+inline __host__ __device__ FloatGrad<float3> fmaxf(
+        FloatGradRef<float3> a, FloatGradRef<float3> b) {
+  return make_float3(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y),
+                     fmaxf(a.z, b.z));
+}
+inline __host__ __device__ FloatGrad<float4> fmaxf(
+        FloatGrad<float4> a, FloatGrad<float4> b) {
+  return make_float4(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y),
+                     fmaxf(a.z, b.z),
+                     fmaxf(a.w, b.w));
+}
+inline __host__ __device__ FloatGrad<float4> fmaxf(
+        FloatGradRef<float4> a, FloatGradRef<float4> b) {
+  return make_float4(fmaxf(a.x, b.x), 
+                     fmaxf(a.y, b.y),
+                     fmaxf(a.z, b.z),
+                     fmaxf(a.w, b.w));
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 inline __host__ __device__ int2 max(int2 a, int2 b) {
   return make_int2(max(a.x, b.x), max(a.y, b.y));
 }
@@ -839,6 +1004,23 @@ inline __device__ __host__ float2 lerp(float2 a, float2 b, float t) { return a +
 inline __device__ __host__ float3 lerp(float3 a, float3 b, float t) { return a + t * (b - a); }
 inline __device__ __host__ float4 lerp(float4 a, float4 b, float t) { return a + t * (b - a); }
 
+inline __device__ __host__ FloatGrad<float> lerp(
+        FloatGrad<float> a, FloatGrad<float> b, float t) { 
+    return a + (b - a) * t; 
+}
+inline __device__ __host__ FloatGrad<float2> lerp(
+        FloatGrad<float2> a, FloatGrad<float2> b, float t) {
+    return a + (b - a) * t; 
+}
+inline __device__ __host__ FloatGrad<float3> lerp(
+        FloatGrad<float3> a, FloatGrad<float3> b, float t) {
+    return a + (b - a) * t; 
+}
+inline __device__ __host__ FloatGrad<float4> lerp(
+        FloatGrad<float4> a, FloatGrad<float4> b, float t) {
+    return a + (b - a) * t; 
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // clamp
 // - clamp the value v to be in the range [a, b]
@@ -867,6 +1049,59 @@ inline __device__ __host__ float4 clamp(float4 v, float4 a, float4 b) {
   return make_float4(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z),
                      clamp(v.w, a.w, b.w));
 }
+
+inline __device__ __host__ FloatGrad<float> clamp(FloatGrad<float> f, 
+                                                  FloatGrad<float> a,
+                                                  FloatGrad<float> b) {
+  return fmaxf(a, fminf(f, b));
+}
+inline __device__ __host__ FloatGrad<float> clamp(FloatGradRef<float> f, 
+                                                  FloatGradRef<float> a,
+                                                  FloatGradRef<float> b) {
+  return fmaxf(a, fminf(f, b));
+}
+inline __device__ __host__ FloatGrad<float2> clamp(FloatGrad<float2> v, 
+                                                   FloatGrad<float> a,
+                                                   FloatGrad<float> b) {
+  return make_float2(clamp(FloatGrad<float>(v.x), a, b), clamp(FloatGrad<float>(v.y), a, b));
+}
+inline __device__ __host__ FloatGrad<float2> clamp(FloatGrad<float2> v, 
+                                                   FloatGrad<float2> a,
+                                                   FloatGrad<float2> b) {
+  return make_float2(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y));
+}
+inline __device__ __host__ FloatGrad<float3> clamp(FloatGrad<float3> v, 
+                                                   FloatGrad<float> a,
+                                                   FloatGrad<float> b) {
+  return make_float3(clamp(FloatGrad<float>(v.x), a, b), 
+                     clamp(FloatGrad<float>(v.y), a, b),
+                     clamp(FloatGrad<float>(v.z), a, b));
+}
+inline __device__ __host__ FloatGrad<float3> clamp(FloatGrad<float3> v, 
+                                                   FloatGrad<float3> a,
+                                                   FloatGrad<float3> b) {
+  return make_float3(clamp(v.x, a.x, b.x), 
+                     clamp(v.y, a.y, b.y),
+                     clamp(v.z, a.z, b.z));
+}
+inline __device__ __host__ FloatGrad<float4> clamp(FloatGrad<float4> v, 
+                                                   FloatGrad<float> a,
+                                                   FloatGrad<float> b) {
+  return make_float4(clamp(FloatGrad<float>(v.x), a, b), 
+                     clamp(FloatGrad<float>(v.y), a, b),
+                     clamp(FloatGrad<float>(v.z), a, b),
+                     clamp(FloatGrad<float>(v.w), a, b));
+}
+inline __device__ __host__ FloatGrad<float4> clamp(FloatGrad<float4> v, 
+                                                   FloatGrad<float4> a,
+                                                   FloatGrad<float4> b) {
+  return make_float4(clamp(v.x, a.x, b.x), 
+                     clamp(v.y, a.y, b.y),
+                     clamp(v.z, a.z, b.z),
+                     clamp(v.w, a.w, b.w));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 inline __device__ __host__ int2 clamp(int2 v, int a, int b) {
   return make_int2(clamp(v.x, a, b), clamp(v.y, a, b));
@@ -920,6 +1155,17 @@ inline __host__ __device__ float dot(float4 a, float4 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
+inline __host__ __device__ FloatGrad<float> dot(FloatGrad<float2> a, FloatGrad<float2> b) { 
+    return a.x * b.x + a.y * b.y; }
+inline __host__ __device__ FloatGrad<float> dot(FloatGrad<float3> a, FloatGrad<float3> b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+inline __host__ __device__ FloatGrad<float> dot(FloatGrad<float4> a, FloatGrad<float4> b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline __host__ __device__ int dot(int2 a, int2 b) { return a.x * b.x + a.y * b.y; }
 inline __host__ __device__ int dot(int3 a, int3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 inline __host__ __device__ int dot(int4 a, int4 b) {
@@ -940,6 +1186,13 @@ inline __host__ __device__ float length(float2 v) { return sqrtf(dot(v, v)); }
 inline __host__ __device__ float length(float3 v) { return sqrtf(dot(v, v)); }
 inline __host__ __device__ float length(float4 v) { return sqrtf(dot(v, v)); }
 
+inline __host__ __device__ FloatGrad<float> length(FloatGrad<float2> v) { 
+    return sqrtf(dot(v, v)); }
+inline __host__ __device__ FloatGrad<float> length(FloatGrad<float3> v) { 
+    return sqrtf(dot(v, v)); }
+inline __host__ __device__ FloatGrad<float> length(FloatGrad<float4> v) { 
+    return sqrtf(dot(v, v)); }
+
 ////////////////////////////////////////////////////////////////////////////////
 // normalize
 ////////////////////////////////////////////////////////////////////////////////
@@ -957,6 +1210,19 @@ inline __host__ __device__ float4 normalize(float4 v) {
   return v * invLen;
 }
 
+inline __host__ __device__ FloatGrad<float2> normalize(FloatGrad<float2> v) { 
+  FloatGrad<float> invLen = rsqrtf(dot(v, v));
+  return v * make_float2(invLen);
+}
+inline __host__ __device__ FloatGrad<float3> normalize(FloatGrad<float3> v) { 
+  FloatGrad<float> invLen = rsqrtf(dot(v, v));
+  return v * make_float3(invLen);
+}
+inline __host__ __device__ FloatGrad<float4> normalize(FloatGrad<float4> v) { 
+  FloatGrad<float> invLen = rsqrtf(dot(v, v));
+  return v * make_float4(invLen);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // floor
 ////////////////////////////////////////////////////////////////////////////////
@@ -966,6 +1232,19 @@ inline __host__ __device__ float3 floorf(float3 v) {
   return make_float3(floorf(v.x), floorf(v.y), floorf(v.z));
 }
 inline __host__ __device__ float4 floorf(float4 v) {
+  return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w));
+}
+
+inline __host__ __device__ FloatGrad<float> floorf(FloatGrad<float> v) { 
+    return FloatGrad<float>{floorf(v.data), 0.0f}; }
+inline __host__ __device__ FloatGrad<float> floorf(FloatGradRef<float> v) { 
+    return FloatGrad<float>{floorf(*v.data_ptr), 0.0f}; }
+inline __host__ __device__ FloatGrad<float2> floorf(FloatGrad<float2> v) { 
+    return make_float2(floorf(v.x), floorf(v.y)); }
+inline __host__ __device__ FloatGrad<float3> floorf(FloatGrad<float3> v) {
+  return make_float3(floorf(v.x), floorf(v.y), floorf(v.z));
+}
+inline __host__ __device__ FloatGrad<float4> floorf(FloatGrad<float4> v) {
   return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w));
 }
 
@@ -979,6 +1258,17 @@ inline __host__ __device__ float3 fracf(float3 v) {
   return make_float3(fracf(v.x), fracf(v.y), fracf(v.z));
 }
 inline __host__ __device__ float4 fracf(float4 v) {
+  return make_float4(fracf(v.x), fracf(v.y), fracf(v.z), fracf(v.w));
+}
+
+inline __host__ __device__ FloatGrad<float> fracf(FloatGrad<float> v) { return v - floorf(v); }
+inline __host__ __device__ FloatGrad<float> fracf(FloatGradRef<float> v) { return v - floorf(v); }
+inline __host__ __device__ FloatGrad<float2> fracf(FloatGrad<float2> v) { 
+    return make_float2(fracf(v.x), fracf(v.y)); }
+inline __host__ __device__ FloatGrad<float3> fracf(FloatGrad<float3> v) {
+  return make_float3(fracf(v.x), fracf(v.y), fracf(v.z));
+}
+inline __host__ __device__ FloatGrad<float4> fracf(FloatGrad<float4> v) {
   return make_float4(fracf(v.x), fracf(v.y), fracf(v.z), fracf(v.w));
 }
 
@@ -996,6 +1286,22 @@ inline __host__ __device__ float4 fmodf(float4 a, float4 b) {
   return make_float4(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z), fmodf(a.w, b.w));
 }
 
+inline __host__ __device__ FloatGrad<float> fmodf(FloatGrad<float> a, FloatGrad<float> b) {
+  return fracf(FloatGrad<float>(a / b)) * b;
+}
+inline __host__ __device__ FloatGrad<float> fmodf(FloatGradRef<float> a, FloatGradRef<float> b) {
+  return fracf(FloatGrad<float>(a / b)) * b;
+}
+inline __host__ __device__ FloatGrad<float2> fmodf(FloatGrad<float2> a, FloatGrad<float2> b) {
+  return make_float2(fmodf(a.x, b.x), fmodf(a.y, b.y));
+}
+inline __host__ __device__ FloatGrad<float3> fmodf(FloatGrad<float3> a, FloatGrad<float3> b) {
+  return make_float3(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z));
+}
+inline __host__ __device__ FloatGrad<float4> fmodf(FloatGrad<float4> a, FloatGrad<float4> b) {
+  return make_float4(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z), fmodf(a.w, b.w));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // absolute value
 ////////////////////////////////////////////////////////////////////////////////
@@ -1005,6 +1311,18 @@ inline __host__ __device__ float3 fabs(float3 v) {
   return make_float3(fabs(v.x), fabs(v.y), fabs(v.z));
 }
 inline __host__ __device__ float4 fabs(float4 v) {
+  return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
+}
+
+inline __host__ __device__ FloatGrad<float> fabs(FloatGrad<float> v) { 
+  return v < 0.0f ? -v : FloatGrad<float>(v); }
+inline __host__ __device__ FloatGrad<float> fabs(FloatGradRef<float> v) { 
+  return v < 0.0f ? -v : FloatGrad<float>(v); }
+inline __host__ __device__ FloatGrad<float2> fabs(FloatGrad<float2> v) {
+  return make_float2(fabs(v.x), fabs(v.y)); }
+inline __host__ __device__ FloatGrad<float3> fabs(FloatGrad<float3> v) {
+  return make_float3(fabs(v.x), fabs(v.y), fabs(v.z)); }
+inline __host__ __device__ FloatGrad<float4> fabs(FloatGrad<float4> v) {
   return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
 }
 
@@ -1022,12 +1340,22 @@ inline __host__ __device__ int4 abs(int4 v) {
 
 inline __host__ __device__ float3 reflect(float3 i, float3 n) { return i - 2.0f * n * dot(n, i); }
 
+inline __host__ __device__ FloatGrad<float3> reflect(FloatGrad<float3> i, FloatGrad<float3> n) {
+  return i - n * make_float3(dot(n, i)) * 2.0f;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // cross product
 ////////////////////////////////////////////////////////////////////////////////
 
 inline __host__ __device__ float3 cross(float3 a, float3 b) {
   return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+inline __host__ __device__ FloatGrad<float3> cross(FloatGrad<float3> a, FloatGrad<float3> b) {
+  return make_float3(FloatGrad<float>(a.y * b.z - a.z * b.y), 
+                     FloatGrad<float>(a.z * b.x - a.x * b.z), 
+                     FloatGrad<float>(a.x * b.y - a.y * b.x));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1052,6 +1380,27 @@ inline __device__ __host__ float3 smoothstep(float3 a, float3 b, float3 x) {
 inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x) {
   float4 y = clamp((x - a) / (b - a), 0.0f, 1.0f);
   return (y * y * (make_float4(3.0f) - (make_float4(2.0f) * y)));
+}
+
+inline __device__ __host__ FloatGrad<float> smoothstep(
+    FloatGrad<float> a, FloatGrad<float> b, FloatGrad<float> x) {
+  FloatGrad<float> y = clamp(FloatGrad<float>((x - a) / (b - a)), FloatGrad<float>(0.0f), FloatGrad<float>(1.0f));
+  return (y * y * (-(y * 2.0f) + 3.0f));
+}
+inline __device__ __host__ FloatGrad<float2> smoothstep(
+    FloatGrad<float2> a, FloatGrad<float2> b, FloatGrad<float2> x) {
+  FloatGrad<float2> y = clamp(FloatGrad<float2>((x - a) / (b - a)), FloatGrad<float>(0.0f), FloatGrad<float>(1.0f));
+  return (y * y * (-(y * 2.0f) + 3.0f));
+}
+inline __device__ __host__ FloatGrad<float3> smoothstep(
+    FloatGrad<float3> a, FloatGrad<float3> b, FloatGrad<float3> x) {
+  FloatGrad<float3> y = clamp(FloatGrad<float3>((x - a) / (b - a)), FloatGrad<float>(0.0f), FloatGrad<float>(1.0f));
+  return (y * y * (-(y * 2.0f) + 3.0f));
+}
+inline __device__ __host__ FloatGrad<float4> smoothstep(
+    FloatGrad<float4> a, FloatGrad<float4> b, FloatGrad<float4> x) {
+  FloatGrad<float4> y = clamp(FloatGrad<float4>((x - a) / (b - a)), FloatGrad<float>(0.0f), FloatGrad<float>(1.0f));
+  return (y * y * (-(y * 2.0f) + 3.0f));
 }
 
 #endif

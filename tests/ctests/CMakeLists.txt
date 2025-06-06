@@ -22,7 +22,9 @@ set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)  # or Static
 # Add test sources and CUDA source
 add_executable(auto_jvp_tests
     main.cpp
-    test_floatgrad.cu)
+    test_floatgrad.cu
+    test_helper_math.cu
+)
 
 message(STATUS "${PROJECT_SOURCE_DIR}/../../cuda")
 target_include_directories(auto_jvp_tests PRIVATE ${PROJECT_SOURCE_DIR}/../../cuda)

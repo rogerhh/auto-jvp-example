@@ -34,6 +34,31 @@ struct FloatGradBaseRef {
         return *this;
     }
 
+    //////////////////////////// Scalar Operations //////////////////////////////////
+
+    __host__ __device__
+    FloatGradBase<FloatType> operator+(const float scalar) const {
+        return FloatGradBase<FloatType>(*this) + scalar;
+    }
+
+    __host__ __device__
+    FloatGradBase<FloatType> operator-(const float scalar) const {
+        return FloatGradBase<FloatType>(*this) - scalar;
+    }
+
+    __host__ __device__
+    FloatGradBase<FloatType> operator*(const float scalar) const {
+        return FloatGradBase<FloatType>(*this) * scalar;
+    }
+
+    __host__ __device__
+    FloatGradBase<FloatType> operator/(const float scalar) const {
+        return FloatGradBase<FloatType>(*this) / scalar;
+    }
+    
+    //////////////////////////// Generic Operations //////////////////////////////////
+
+
     template <typename OtherType>
     __host__ __device__
     bool operator==(const OtherType& other) const {
@@ -68,6 +93,11 @@ struct FloatGradBaseRef {
     __host__ __device__
     bool operator>=(const OtherType& other) const {
         return FloatGradBase<FloatType>(*this) >= FloatGradBase<FloatType>(other);
+    }
+
+    __host__ __device__
+    FloatGradBase<FloatType> operator-() const {
+        return -FloatGradBase<FloatType>(*this);
     }
 
     template <typename OtherType>
@@ -164,6 +194,58 @@ struct FloatGradBase {
         return *this;
     }
 
+    //////////////////////////// Scalar Operations //////////////////////////////////
+
+    __host__ __device__
+    FloatGradBase operator+(const float scalar) const {
+        return FloatGradBase(data + scalar, grad);
+    }
+
+    __host__ __device__
+    FloatGradBase operator-(const float scalar) const {
+        return FloatGradBase(data - scalar, grad);
+    }
+
+    __host__ __device__
+    FloatGradBase operator*(const float scalar) const {
+        return FloatGradBase(data * scalar, grad * scalar);
+    }
+
+    __host__ __device__
+    FloatGradBase operator/(const float scalar) const {
+        return FloatGradBase(data / scalar, grad / scalar);
+    }
+    
+    //////////////////////////// FloatGradBase Operations //////////////////////////////////
+
+    __host__ __device__
+    FloatGradBase& operator+=(const FloatGradBase& other) {
+        data += other.data;
+        grad += other.grad;
+        return *this;
+    }
+
+    __host__ __device__
+    FloatGradBase& operator-=(const FloatGradBase& other) {
+        data -= other.data;
+        grad -= other.grad;
+        return *this;
+    }
+
+    __host__ __device__
+    FloatGradBase& operator*=(const FloatGradBase& other) {
+        grad = grad * other.data + data * other.grad;
+        data *= other.data;
+        return *this;
+    }
+
+    __host__ __device__
+    FloatGradBase& operator/=(const FloatGradBase& other) {
+        grad = (grad * other.data - data * other.grad) / (other.data * other.data);
+        data /= other.data;
+        return *this;
+    }
+
     __host__ __device__
     bool operator==(const FloatGradBase& other) const {
         return data == other.data;
@@ -195,6 +277,11 @@ struct FloatGradBase {
     }
 
     __host__ __device__
+    FloatGradBase operator-() const {
+        return FloatGradBase(-data, -grad);
+    }
+
+    __host__ __device__
     FloatGradBase operator+(const FloatGradBase& other) const {
         return FloatGradBase(data + other.data, grad + other.grad);
     }
@@ -214,39 +301,13 @@ struct FloatGradBase {
         return FloatGradBase(data / other.data, (grad * other.data - data * other.grad) / (other.data * other.data));
     }
 
-    __host__ __device__
-    FloatGradBase& operator+=(const FloatGradBase& other) {
-        data += other.data;
-        grad += other.grad;
-        return *this;
-    }
-
-    __host__ __device__
-    FloatGradBase& operator-=(const FloatGradBase& other) {
-        data -= other.data;
-        grad -= other.grad;
-        return *this;
-    }
-
-    __host__ __device__
-    FloatGradBase& operator*=(const FloatGradBase& other) {
-        grad = grad * other.data + data * other.grad;
-        data *= other.data;
-        return *this;
-    }
-
-    __host__ __device__
-    FloatGradBase& operator/=(const FloatGradBase& other) {
-        grad = (grad * other.data - data * other.grad) / (other.data * other.data);
-        data /= other.data;
-        return *this;
-    }
-
     // Full equality check
     __host__ __device__
     bool eq(const FloatGradBase& other) const {
         return data == other.data && grad == other.grad;
     }
+    
+    //////////////////////////// Generic Operations //////////////////////////////////
 
     template <typename OtherType>
     __host__ __device__
@@ -347,15 +408,27 @@ struct FloatGradBase {
 
 template <typename FloatType>
 __host__ __device__
-FloatGradBase<FloatType> sqrtf(const FloatGradBase<FloatType>& x) {
+inline FloatGradBase<FloatType> sqrtf(const FloatGradBase<FloatType>& x) {
     FloatType sqrt_x = sqrtf(x.data);
     return FloatGradBase<FloatType>(sqrt_x, x.grad / (FloatType(2.0f) * sqrt_x));
 }
 
 template <typename FloatType>
 __host__ __device__
-FloatGradBase<FloatType> sqrtf(const FloatGradBaseRef<FloatType>& x) {
+inline FloatGradBase<FloatType> sqrtf(const FloatGradBaseRef<FloatType>& x) {
     return sqrtf(FloatGradBase<FloatType>(x));
+}
+
+template <typename FloatType>
+__host__ __device__
+inline FloatGradBase<FloatType> rsqrtf(const FloatGradBase<FloatType>& x) {
+    return FloatGradBase<FloatType>(FloatType(1)) / sqrtf(x);
+}
+
+template <typename FloatType>
+__host__ __device__
+inline FloatGradBase<FloatType> rsqrtf(const FloatGradBaseRef<FloatType>& x) {
+    return FloatGradBase<FloatType>(FloatType(1)) / sqrtf(x);
 }
 
 //////////////////////////////////////////////////////////
@@ -382,6 +455,38 @@ struct FloatGradRef : FloatGradBaseRef<FloatType> {
 };
 
 template <>
+struct FloatGradRef<float> : FloatGradBaseRef<float> {
+    template <typename... Args>
+    __host__ __device__
+    FloatGradRef<float>(Args&&... args) 
+    : FloatGradBaseRef<float>(std::forward<Args>(args)...) {}
+
+    __host__ __device__
+    FloatGradRef& operator=(const FloatGradBase<float>& other) {
+        *(this->data_ptr) = other.data;
+        *(this->grad_ptr) = other.grad;
+        return *this;
+    }
+
+    __host__ __device__
+    FloatGradRef& operator=(const FloatGradBaseRef<float>& other) {
+        *(this->data_ptr) = *other.data_ptr;
+        *(this->grad_ptr) = *other.grad_ptr;
+        return *this;
+    }
+
+    __host__ __device__
+    operator int() const {
+        return static_cast<int>(*this->data_ptr);
+    }
+
+    // __host__ __device__
+    // operator float() const {
+    //     return *this->data_ptr;
+    // }
+};
+
+template <>
 struct FloatGradRef<float2> : FloatGradBaseRef<float2> {
     template <typename... Args>
     __host__ __device__
@@ -403,8 +508,8 @@ struct FloatGradRef<float2> : FloatGradBaseRef<float2> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
 };
 
 template <>
@@ -431,9 +536,9 @@ struct FloatGradRef<float3> : FloatGradBaseRef<float3> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
-    FloatGradBaseRef<float> z;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
+    FloatGradRef<float> z;
 };
 
 template <>
@@ -461,10 +566,10 @@ struct FloatGradRef<float4> : FloatGradBaseRef<float4> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
-    FloatGradBaseRef<float> z;
-    FloatGradBaseRef<float> w;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
+    FloatGradRef<float> z;
+    FloatGradRef<float> w;
 };
 
 template <typename FloatType>
@@ -488,6 +593,38 @@ struct FloatGrad : FloatGradBase<FloatType> {
         this->grad = *other.grad_ptr;
         return *this;
     }
+};
+
+template <>
+struct FloatGrad<float> : FloatGradBase<float> {
+    template <typename... Args>
+    __host__ __device__
+    FloatGrad<float>(Args&&... args) 
+    : FloatGradBase<float>(std::forward<Args>(args)...) {}
+
+    __host__ __device__
+    FloatGrad& operator=(const FloatGradBase<float>& other) {
+        this->data = other.data;
+        this->grad = other.grad;
+        return *this;
+    }
+
+    __host__ __device__
+    FloatGrad& operator=(const FloatGradBaseRef<float>& other) {
+        this->data = *other.data_ptr;
+        this->grad = *other.grad_ptr;
+        return *this;
+    }
+
+    __host__ __device__
+    operator int() const {
+        return static_cast<int>(this->data);
+    }
+
+    // __host__ __device__
+    // operator float() const {
+    //     return this->data;
+    // }
 };
 
 template <>
@@ -517,8 +654,8 @@ struct FloatGrad<float2> : FloatGradBase<float2> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
 };
 
 template <>
@@ -552,9 +689,9 @@ struct FloatGrad<float3> : FloatGradBase<float3> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
-    FloatGradBaseRef<float> z;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
+    FloatGradRef<float> z;
 };
 
 template <>
@@ -590,10 +727,10 @@ struct FloatGrad<float4> : FloatGradBase<float4> {
         return *this;
     }
 
-    FloatGradBaseRef<float> x;
-    FloatGradBaseRef<float> y;
-    FloatGradBaseRef<float> z;
-    FloatGradBaseRef<float> w;
+    FloatGradRef<float> x;
+    FloatGradRef<float> y;
+    FloatGradRef<float> z;
+    FloatGradRef<float> w;
 };
 
 //////////////////////////////////////////////////////////
