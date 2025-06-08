@@ -14,8 +14,8 @@ setup(
                 "ext.cu"
             ],
             extra_compile_args={
-                "nvcc": ["-O3", "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)))],
-                "cxx": ["-O3"]
+                "nvcc": ["-O3", "--std=c++20", "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)))],
+                "cxx": ["-O3", "--std=c++20"]
             }
         )
     ],
