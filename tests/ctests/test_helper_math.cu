@@ -71,31 +71,31 @@ TEST(FloatGradHelperMathTest, MakeFloat4) {
 }
 
 TEST(FloatGradHelperMathTest, ArithmeticOperators) {
-    // float4 a_data = make_float4(1.0f, 2.0f, 3.0f, 4.0f);
-    // float4 a_grad = make_float4(0.1f, 0.2f, 0.3f, 0.4f);
+    float4 a_data = make_float4(1.0f, 2.0f, 3.0f, 4.0f);
+    float4 a_grad = make_float4(0.1f, 0.2f, 0.3f, 0.4f);
 
-    // float4 b_data = make_float4(-2.0f, -4.0f, -6.0f, -8.0f);
-    // float4 b_grad = make_float4(-0.2f, -0.4f, -0.6f, -0.8f);
+    float4 b_data = make_float4(-2.0f, -4.0f, -6.0f, -8.0f);
+    float4 b_grad = make_float4(-0.2f, -0.4f, -0.6f, -0.8f);
 
-    // FloatGrad<float4> a(a_data, a_grad);
-    // FloatGrad<float4> b(b_data, b_grad);
+    FloatGrad<float4> a(a_data, a_grad);
+    FloatGrad<float4> b(b_data, b_grad);
 
-    // FloatGrad<float4> c = a + b;
+    FloatGrad<float4> c = a + b;
 
-    // EXPECT_TRUE(float_eq(c, FloatGrad<float4>(make_float4(-1.0f, -2.0f, -3.0f, -4.0f), 
-    //                                           make_float4(-0.1f, -0.2f, -0.3f, -0.4f))));
+    EXPECT_TRUE(float_eq(c, FloatGrad<float4>(make_float4(-1.0f, -2.0f, -3.0f, -4.0f), 
+                                              make_float4(-0.1f, -0.2f, -0.3f, -0.4f))));
 
-    // c = a - b_grad;
+    c = a - b_grad;
 
-    // EXPECT_TRUE(float_eq(c, FloatGrad<float4>(make_float4(1.2f, 2.4f, 3.6f, 4.8f), 
-    //                                           make_float4(0.1f, 0.2f, 0.3f, 0.4f))));
+    EXPECT_TRUE(float_eq(c, FloatGrad<float4>(make_float4(1.2f, 2.4f, 3.6f, 4.8f), 
+                                              make_float4(0.1f, 0.2f, 0.3f, 0.4f))));
 
-    // FloatGrad<float3> d = make_float3(c);
-    // FloatGrad<float3> e = make_float3(a.w);
+    FloatGrad<float3> d = make_float3(c);
+    FloatGrad<float3> e = make_float3(a.w);
 
-    // d += e;
+    d += e;
 
-    // EXPECT_TRUE(float_eq(d, FloatGrad<float3>(make_float3(4.2f, 6.4f, 7.6f), 
-    //                                           make_float3(0.5f, 0.6f, 0.7f))));
+    EXPECT_TRUE(float_eq(d, FloatGrad<float3>(make_float3(5.2f, 6.4f, 7.6f), 
+                                              make_float3(0.5f, 0.6f, 0.7f))));
 
 }

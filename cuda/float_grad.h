@@ -55,24 +55,6 @@ struct FloatGradRef {
     const FloatType& grad() const {
         return *grad_ptr_;
     }
-
-    // Declaration of compound assignment operators
-    template <typename OtherType>
-    __host__ __device__
-    FloatGradRef& operator+=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGradRef& operator-=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGradRef& operator*=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGradRef& operator/=(const OtherType& other);
-
 };
 
 template <typename FloatType>
@@ -125,23 +107,6 @@ struct FloatGrad {
     const FloatType& grad() const {
         return grad_;
     }
-
-    // Declaration of compound assignment operators
-    template <typename OtherType>
-    __host__ __device__
-    FloatGrad& operator+=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGrad& operator-=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGrad& operator*=(const OtherType& other);
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGrad& operator/=(const OtherType& other);
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -182,6 +147,18 @@ struct is_float_grad<FloatGradRef<FloatType>> : std::true_type {};
 
 template <typename FloatType>
 struct is_float_grad<FloatGrad<FloatType>> : std::true_type {};
+
+template <typename T>
+struct is_float_grad_ref : std::false_type {};
+
+template <typename FloatType>
+struct is_float_grad_ref<FloatGradRef<FloatType>> : std::true_type {};
+
+template <typename T>
+struct is_float_grad_val : std::false_type {};
+
+template <typename FloatType>
+struct is_float_grad_val<FloatGrad<FloatType>> : std::true_type {};
 
 template <typename T>
 struct is_float_type : std::false_type {};
@@ -391,70 +368,69 @@ auto sqrtf(const T& a) {
 
 /// Compound assignment operators
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGradRef<FloatType>& FloatGradRef<FloatType>::operator+=(const OtherType& other) {
-    *this = *this + other;
-    return *this;
+std::enable_if_t<is_float_grad_val<T>::value, T&>
+operator+=(T& t, const OtherType& other) {
+    t = t + other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGradRef<FloatType>& FloatGradRef<FloatType>::operator-=(const OtherType& other) {
-    *this = *this - other;
-    return *this;
+std::enable_if_t<is_float_grad_ref<T>::value, T>
+operator+=(T t, const OtherType& other) {
+    t = t + other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGrad<FloatType>& FloatGrad<FloatType>::operator*=(const OtherType& other) {
-    *this = *this * other;
-    return *this;
+std::enable_if_t<is_float_grad_val<T>::value, T&>
+operator-=(T& t, const OtherType& other) {
+    t = t - other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGrad<FloatType>& FloatGrad<FloatType>::operator/=(const OtherType& other) {
-    *this = *this / other;
-    return *this;
+std::enable_if_t<is_float_grad_ref<T>::value, T>
+operator-=(T t, const OtherType& other) {
+    t = t - other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGrad<FloatType>& FloatGrad<FloatType>::operator+=(const OtherType& other) {
-    *this = *this + other;
-    return *this;
+std::enable_if_t<is_float_grad_val<T>::value, T&>
+operator*=(T& t, const OtherType& other) {
+    t = t * other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGrad<FloatType>& FloatGrad<FloatType>::operator-=(const OtherType& other) {
-    *this = *this - other;
-    return *this;
+std::enable_if_t<is_float_grad_ref<T>::value, T>
+operator*=(T t, const OtherType& other) {
+    t = t * other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGradRef<FloatType>& FloatGradRef<FloatType>::operator*=(const OtherType& other) {
-    *this = *this * other;
-    return *this;
+std::enable_if_t<is_float_grad_val<T>::value, T&>
+operator/=(T& t, const OtherType& other) {
+    t = t / other;
+    return t;
 }
 
-template <typename FloatType>
-template <typename OtherType>
+template <typename T, typename OtherType>
 __host__ __device__
-FloatGradRef<FloatType>& FloatGradRef<FloatType>::operator/=(const OtherType& other) {
-    *this = *this / other;
-    return *this;
+std::enable_if_t<is_float_grad_ref<T>::value, T>
+operator/=(T t, const OtherType& other) {
+    t = t / other;
+    return t;
 }
-
 
 #include "float_grad_float2.h"
 #include "float_grad_float3.h"

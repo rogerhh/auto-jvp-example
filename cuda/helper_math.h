@@ -141,6 +141,11 @@ std::enable_if_t<is_float2_type<T1>::value
                  && is_float_type<T2>::value,
                  FloatGrad<float3>>
 make_float3(T1 a, T2 s) { return make_float3(a.x, a.y, s); }
+template <typename T1>
+inline __host__ __device__ 
+std::enable_if_t<is_float4_type<T1>::value,
+                 FloatGrad<float3>>
+make_float3(T1 a) { return make_float3(a.x, a.y, a.z); }
 
 inline __host__ __device__ int3 make_int3(int s) { return make_int3(s, s, s); }
 inline __host__ __device__ int3 make_int3(int2 a) { return make_int3(a.x, a.y, 0); }
