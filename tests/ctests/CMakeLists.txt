@@ -23,7 +23,10 @@ set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)  # or Static
 add_executable(auto_jvp_tests
     main.cpp
     test_floatgrad.cu
-    # test_helper_math.cu
+    test_floatgrad_float2.cu
+    test_floatgrad_float3.cu
+    test_floatgrad_float4.cu
+    test_helper_math.cu
 )
 
 message(STATUS "${PROJECT_SOURCE_DIR}/../../cuda")

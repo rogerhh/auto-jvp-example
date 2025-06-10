@@ -145,7 +145,7 @@ struct FloatGrad {
 };
 
 //////////////////////////////////////////////////////////////////////////////
-/// Advanced template checking using SFINAE
+/// Container
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename FloatType>
@@ -172,6 +172,9 @@ struct FloatGradArray {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+struct always_false : std::false_type {};
+
+template <typename T>
 struct is_float_grad : std::false_type {};
 
 template <typename FloatType>
@@ -181,12 +184,39 @@ template <typename FloatType>
 struct is_float_grad<FloatGrad<FloatType>> : std::true_type {};
 
 template <typename T>
+struct is_float_type : std::false_type {};
+
+template <>
+struct is_float_type<float> : std::true_type {};
+
+template <>
+struct is_float_type<FloatGrad<float>> : std::true_type {};
+
+template <>
+struct is_float_type<FloatGradRef<float>> : std::true_type {};
+
+template <typename T>
 __host__ __device__
 decltype(auto) get_data(const T& t) {
     if constexpr (is_float_grad<T>::value) {
         return t.data();
     } else {
         return t;
+    }
+}
+
+
+template <typename T>
+__host__ __device__
+decltype(auto) get_grad(const T& t) {
+    if constexpr (is_float_grad<T>::value) {
+        return t.grad();
+    }
+    else if constexpr (std::is_same_v<T, float>) {
+        return 0.0f; // Default gradient for non-Floatgrad floats
+    }
+    else {
+        static_assert(always_false<T>::value, "Unsupported type for get_grad");
     }
 }
 
@@ -278,15 +308,12 @@ FloatGrad<F3> operator-(const T1& a) {
 }
 
 template <typename T1, typename T2,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F2=decltype(get_data(std::declval<T2>())),
-          typename F3=decltype(std::declval<F1>() + std::declval<F2>()),
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
 __host__ __device__
-FloatGrad<F3> operator+(const T1& a, const T2& b) {
-    F3 data = get_data<T1>(a) + get_data<T2>(b);
-    F3 grad;
+auto operator+(const T1& a, const T2& b) {
+    auto data = get_data<T1>(a) + get_data<T2>(b);
+    decltype(data) grad;
     if constexpr (is_float_grad<T1>::value 
         && is_float_grad<T2>::value) {
         grad = a.grad() + b.grad();
@@ -295,19 +322,16 @@ FloatGrad<F3> operator+(const T1& a, const T2& b) {
     } else {
         grad = b.grad();
     }
-    return FloatGrad<F3>(data, grad);
+    return FloatGrad<decltype(data)>(data, grad);
 }
 
 template <typename T1, typename T2,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F2=decltype(get_data(std::declval<T2>())),
-          typename F3=decltype(std::declval<F1>() - std::declval<F2>()),
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
 __host__ __device__
-FloatGrad<F3> operator-(const T1& a, const T2& b) {
-    F3 data = get_data<T1>(a) - get_data<T2>(b);
-    F3 grad;
+auto operator-(const T1& a, const T2& b) {
+    auto data = get_data<T1>(a) - get_data<T2>(b);
+    decltype(data) grad;
     if constexpr (is_float_grad<T1>::value 
         && is_float_grad<T2>::value) {
         grad = a.grad() - b.grad();
@@ -316,59 +340,53 @@ FloatGrad<F3> operator-(const T1& a, const T2& b) {
     } else {
         grad = b.grad();
     }
-    return FloatGrad<F3>(data, grad);
+    return FloatGrad<decltype(data)>(data, grad);
 }
 
 template <typename T1, typename T2,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F2=decltype(get_data(std::declval<T2>())),
-          typename F3=decltype(std::declval<F1>() * std::declval<F2>()),
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
 __host__ __device__
-FloatGrad<F3> operator*(const T1& a, const T2& b) {
-    F3 data = get_data<T1>(a) * get_data<T2>(b);
-    F3 grad;
+auto operator*(const T1& a, const T2& b) {
+    auto data = get_data<T1>(a) * get_data<T2>(b);
+    decltype(data) grad;
     if constexpr (is_float_grad<T1>::value 
         && is_float_grad<T2>::value) {
-        grad = a.data() * b.grad() + a.grad() * b.data();
+        grad = get_data(a) * get_grad(b) + get_grad(a) * get_data(b);
     } else if constexpr (is_float_grad<T1>::value) {
-        grad = a.grad() * b.data();
+        grad = get_grad(a) * get_data(b);
     } else {
-        grad = a.data() * b.grad();
+        grad = get_data(a) * get_grad(b);
     }
-    return FloatGrad<F3>(data, grad);
+    return FloatGrad<decltype(data)>(data, grad);
 }
 
 template <typename T1, typename T2,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F2=decltype(get_data(std::declval<T2>())),
-          typename F3=decltype(std::declval<F1>() / std::declval<F2>()),
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
 __host__ __device__
-FloatGrad<F3> operator/(const T1& a, const T2& b) {
-    F3 data = get_data<T1>(a) / get_data<T2>(b);
-    F3 grad;
+auto operator/(const T1& a, const T2& b) {
+    auto data = get_data<T1>(a) / get_data<T2>(b);
+    decltype(data) grad;
     if constexpr (is_float_grad<T1>::value 
         && is_float_grad<T2>::value) {
-        grad = (a.grad() * b.data() - a.data() * b.grad()) / (b.data() * b.data());
+        grad = (get_grad(a) * get_data(b) - get_data(a) * get_grad(b)) 
+                / (get_data(b) * get_data(b));
     } else if constexpr (is_float_grad<T1>::value) {
-        grad = a.grad() * b.data() / (b.data() * b.data());
+        grad = get_grad(a) / get_data(b);
     } else {
-        grad = -a.data() * b.grad() / (b.data() * b.data());
+        grad = -get_data(a) * get_grad(b) / (get_data(b) * get_data(b));
     }
-    return FloatGrad<F3>(data, grad);
+    return FloatGrad<decltype(data)>(data, grad);
 }
 
 template <typename T,
-          typename F=decltype(sqrtf(get_data(std::declval<T>()))),
           typename = std::enable_if_t<is_float_grad<T>::value>>
 __host__ __device__
-FloatGrad<F> sqrtf(const T& a) {
-    F data = sqrtf(a.data());
-    F grad = a.grad() / (2.0f * data);
-    return FloatGrad<F>(data, grad);
+auto sqrtf(const T& a) {
+    auto data = sqrtf(a.data());
+    decltype(auto) grad = a.grad() / (2.0f * data);
+    return FloatGrad<decltype(data)>(data, grad);
 }
 
 /// Compound assignment operators
@@ -439,6 +457,8 @@ FloatGradRef<FloatType>& FloatGradRef<FloatType>::operator/=(const OtherType& ot
 
 
 #include "float_grad_float2.h"
+#include "float_grad_float3.h"
+#include "float_grad_float4.h"
 
 
 #endif // FLOAT_GRAD_H
