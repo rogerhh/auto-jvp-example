@@ -161,18 +161,6 @@ template <typename FloatType>
 struct is_float_grad_val<FloatGrad<FloatType>> : std::true_type {};
 
 template <typename T>
-struct is_float_type : std::false_type {};
-
-template <>
-struct is_float_type<float> : std::true_type {};
-
-template <>
-struct is_float_type<FloatGrad<float>> : std::true_type {};
-
-template <>
-struct is_float_type<FloatGradRef<float>> : std::true_type {};
-
-template <typename T>
 __host__ __device__
 decltype(auto) get_data(const T& t) {
     if constexpr (is_float_grad<T>::value) {
@@ -315,7 +303,7 @@ auto operator-(const T1& a, const T2& b) {
     } else if constexpr (is_float_grad<T1>::value) {
         grad = a.grad();
     } else {
-        grad = b.grad();
+        grad = -b.grad();
     }
     return FloatGrad<decltype(data)>(data, grad);
 }
@@ -432,6 +420,7 @@ operator/=(T t, const OtherType& other) {
     return t;
 }
 
+#include "float_grad_float.h"
 #include "float_grad_float2.h"
 #include "float_grad_float3.h"
 #include "float_grad_float4.h"

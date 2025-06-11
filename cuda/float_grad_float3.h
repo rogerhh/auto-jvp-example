@@ -60,6 +60,9 @@ struct FloatGradRef<float3> {
 template <>
 struct FloatGrad<float3> {
     __host__ __device__
+    FloatGrad(const float3& data);
+
+    __host__ __device__
     FloatGrad(const float3& data, const float3& grad);
 
     __host__ __device__
@@ -129,6 +132,11 @@ inline FloatGradRef<float3>& FloatGradRef<float3>::operator=(const FloatGrad<flo
     *grad_ptr_ = other.grad_;
     return *this;
 }
+
+__host__ __device__
+inline FloatGrad<float3>::FloatGrad(const float3& data)
+    : data_(data), grad_(float3{0.0f, 0.0f, 0.0f}),
+      x(&data_.x, &grad_.x), y(&data_.y, &grad_.y), z(&data_.z, &grad_.z) {}
 
 __host__ __device__
 inline FloatGrad<float3>::FloatGrad(const float3& data, const float3& grad)
