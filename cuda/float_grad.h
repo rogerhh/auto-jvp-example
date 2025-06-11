@@ -248,30 +248,6 @@ operator>=(const T1& a, const T2& b) {
 
 /// Arithmetic operators
 
-// Unary plus operator
-template <typename T1,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F3=F1,
-          typename = std::enable_if_t<is_float_grad<T1>::value>>
-__host__ __device__
-FloatGrad<F3> operator+(const T1& a) {
-    F3 data = get_data<T1>(a);
-    F3 grad = a.grad();
-    return FloatGrad<F3>(data, grad);
-}
-
-// Unary minus operator
-template <typename T1,
-          typename F1=decltype(get_data(std::declval<T1>())),
-          typename F3=decltype(-std::declval<F1>()),
-          typename = std::enable_if_t<is_float_grad<T1>::value>>
-__host__ __device__
-FloatGrad<F3> operator-(const T1& a) {
-    F3 data = get_data<T1>(a);
-    F3 grad = a.grad();
-    return FloatGrad<F3>(-data, -grad);
-}
-
 template <typename T1, typename T2,
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
@@ -342,15 +318,6 @@ auto operator/(const T1& a, const T2& b) {
     } else {
         grad = -get_data(a) * get_grad(b) / (get_data(b) * get_data(b));
     }
-    return FloatGrad<decltype(data)>(data, grad);
-}
-
-template <typename T,
-          typename = std::enable_if_t<is_float_grad<T>::value>>
-__host__ __device__
-auto sqrtf(const T& a) {
-    auto data = sqrtf(a.data());
-    decltype(auto) grad = a.grad() / (2.0f * data);
     return FloatGrad<decltype(data)>(data, grad);
 }
 

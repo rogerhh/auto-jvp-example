@@ -80,7 +80,8 @@ std::enable_if_t<is_float_type<T1>::value && is_float_type<T2>::value,
 fmaxf(T1 a, T2 b) { return a > b ? FloatGrad<float>(a) : FloatGrad<float>(b); }
 
 template <typename T1, typename = std::enable_if_t<is_float_type<T1>::value>>
-inline FloatGrad<float> rsqrtf(T1 x) { return 1.0f / sqrtf(x); }
+inline __host__ __device__
+FloatGrad<float> rsqrtf(T1 x) { return 1.0f / sqrtf(x); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // constructors
@@ -214,15 +215,27 @@ inline __host__ __device__ uint4 make_uint4(int4 a) {
 // negate
 ////////////////////////////////////////////////////////////////////////////////
 
-inline __host__ __device__ float2 operator-(float2 &a) { return make_float2(-a.x, -a.y); }
-inline __host__ __device__ int2 operator-(int2 &a) { return make_int2(-a.x, -a.y); }
-inline __host__ __device__ float3 operator-(float3 &a) { return make_float3(-a.x, -a.y, -a.z); }
-inline __host__ __device__ int3 operator-(int3 &a) { return make_int3(-a.x, -a.y, -a.z); }
-inline __host__ __device__ float4 operator-(float4 &a) {
+inline __host__ __device__ float2 operator-(const float2 &a) { return make_float2(-a.x, -a.y); }
+inline __host__ __device__ int2 operator-(const int2 &a) { return make_int2(-a.x, -a.y); }
+inline __host__ __device__ float3 operator-(const float3 &a) { return make_float3(-a.x, -a.y, -a.z); }
+inline __host__ __device__ int3 operator-(const int3 &a) { return make_int3(-a.x, -a.y, -a.z); }
+inline __host__ __device__ float4 operator-(const float4 &a) {
   return make_float4(-a.x, -a.y, -a.z, -a.w);
 }
-inline __host__ __device__ int4 operator-(int4 &a) { return make_int4(-a.x, -a.y, -a.z, -a.w); }
+inline __host__ __device__ int4 operator-(const int4 &a) { return make_int4(-a.x, -a.y, -a.z, -a.w); }
 
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+operator-(const T &a) { return make_float2(-a.x, -a.y); }
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+operator-(const T &a) { return make_float3(-a.x, -a.y, -a.z); }
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+operator-(const T &a) { return make_float4(-a.x, -a.y, -a.z, -a.w); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // addition
@@ -999,6 +1012,73 @@ inline __device__ __host__ float4 clamp(float4 v, float4 a, float4 b) {
                      clamp(v.w, a.w, b.w));
 }
 
+template <typename T1, typename T2, typename T3>
+inline __device__ __host__
+std::enable_if_t<is_float_type<T1>::value 
+                 && is_float_type<T2>::value 
+                 && is_float_type<T3>::value, 
+                 FloatGrad<float>>
+clamp(T1 f, T2 a, T3 b) { return fmaxf(a, fminf(f, b)); }
+template <typename T1, typename T2, typename T3>
+inline __device__ __host__
+std::enable_if_t<is_float2_type<T1>::value 
+                 && ((is_float_type<T2>::value && is_float_type<T3>::value)
+                 || (is_float2_type<T2>::value && is_float2_type<T3>::value)), 
+                 FloatGrad<float2>>
+clamp(T1 v, T2 a, T3 b) { 
+    if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
+        return make_float2(clamp(v.x, a, b), clamp(v.y, a, b)); 
+    } 
+    else if constexpr (is_float2_type<T2>::value && is_float2_type<T3>::value) {
+        return make_float2(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y));
+    }
+    else {
+        static_assert(always_false<T1>::value 
+                      && always_false<T2>::value 
+                      && always_false<T3>::value, "Unsupported type combination for clamp");
+    }
+}
+template <typename T1, typename T2, typename T3>
+inline __device__ __host__
+std::enable_if_t<is_float3_type<T1>::value 
+                 && ((is_float_type<T2>::value && is_float_type<T3>::value)
+                 || (is_float3_type<T2>::value && is_float3_type<T3>::value)), 
+                 FloatGrad<float3>>
+clamp(T1 v, T2 a, T3 b) { 
+    if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
+        return make_float3(clamp(v.x, a, b), clamp(v.y, a, b), clamp(v.z, a, b)); 
+    } 
+    else if constexpr (is_float3_type<T2>::value && is_float3_type<T3>::value) {
+        return make_float3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z));
+    }
+    else {
+        static_assert(always_false<T1>::value 
+                      && always_false<T2>::value 
+                      && always_false<T3>::value, "Unsupported type combination for clamp");
+    }
+}
+template <typename T1, typename T2, typename T3>
+inline __device__ __host__
+std::enable_if_t<is_float4_type<T1>::value 
+                 && ((is_float_type<T2>::value && is_float_type<T3>::value)
+                 || (is_float4_type<T2>::value && is_float4_type<T3>::value)), 
+                 FloatGrad<float4>>
+clamp(T1 v, T2 a, T3 b) { 
+    if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
+        return make_float4(clamp(v.x, a, b), clamp(v.y, a, b), 
+                           clamp(v.z, a, b), clamp(v.w, a, b));
+    } 
+    else if constexpr (is_float4_type<T2>::value && is_float4_type<T3>::value) {
+        return make_float4(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), 
+                           clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w));
+    }
+    else {
+        static_assert(always_false<T1>::value 
+                      && always_false<T2>::value 
+                      && always_false<T3>::value, "Unsupported type combination for clamp");
+    }
+}
+
 inline __device__ __host__ int2 clamp(int2 v, int a, int b) {
   return make_int2(clamp(v.x, a, b), clamp(v.y, a, b));
 }
@@ -1051,6 +1131,28 @@ inline __host__ __device__ float dot(float4 a, float4 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value, 
+                 FloatGrad<float>>
+dot(T1 a, T2 b) { 
+    return a.x * b.x + a.y * b.y;
+}
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value, 
+                 FloatGrad<float>>
+dot(T1 a, T2 b) { 
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value, 
+                 FloatGrad<float>>
+dot(T1 a, T2 b) { 
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
 inline __host__ __device__ int dot(int2 a, int2 b) { return a.x * b.x + a.y * b.y; }
 inline __host__ __device__ int dot(int3 a, int3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 inline __host__ __device__ int dot(int4 a, int4 b) {
@@ -1071,6 +1173,15 @@ inline __host__ __device__ float length(float2 v) { return sqrtf(dot(v, v)); }
 inline __host__ __device__ float length(float3 v) { return sqrtf(dot(v, v)); }
 inline __host__ __device__ float length(float4 v) { return sqrtf(dot(v, v)); }
 
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value
+                 || is_float3_type<T>::value
+                 || is_float4_type<T>::value, FloatGrad<float>>
+length(T v) { 
+    return sqrtf(dot(v, v));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // normalize
 ////////////////////////////////////////////////////////////////////////////////
@@ -1088,6 +1199,16 @@ inline __host__ __device__ float4 normalize(float4 v) {
   return v * invLen;
 }
 
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value
+                 || is_float3_type<T>::value
+                 || is_float4_type<T>::value, T>
+normalize(T v) { 
+    FloatGrad<float> invLen = rsqrtf(dot(v, v));
+    return v * invLen;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // floor
 ////////////////////////////////////////////////////////////////////////////////
@@ -1099,6 +1220,21 @@ inline __host__ __device__ float3 floorf(float3 v) {
 inline __host__ __device__ float4 floorf(float4 v) {
   return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w));
 }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+floorf(T v) { return make_float2(floorf(v.x), floorf(v.y)); }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+floorf(T v) { return make_float3(floorf(v.x), floorf(v.y), floorf(v.z)); }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+floorf(T v) { return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w)); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // frac - returns the fractional portion of a scalar or each vector component
@@ -1112,6 +1248,26 @@ inline __host__ __device__ float3 fracf(float3 v) {
 inline __host__ __device__ float4 fracf(float4 v) {
   return make_float4(fracf(v.x), fracf(v.y), fracf(v.z), fracf(v.w));
 }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float_type<T>::value, FloatGrad<float>>
+fracf(T v) { return v - floorf(v); }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+fracf(T v) { return make_float2(fracf(v.x), fracf(v.y)); }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+fracf(T v) { return make_float3(fracf(v.x), fracf(v.y), fracf(v.z)); }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+fracf(T v) { return make_float4(fracf(v.x), fracf(v.y), fracf(v.z), fracf(v.w)); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // fmod
@@ -1127,6 +1283,30 @@ inline __host__ __device__ float4 fmodf(float4 a, float4 b) {
   return make_float4(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z), fmodf(a.w, b.w));
 }
 
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T1>::value
+                 && is_float2_type<T2>::value, FloatGrad<float2>>
+fmodf(T1 a, T2 b) { 
+    return make_float2(fmodf(a.x, b.x), fmodf(a.y, b.y)); 
+}
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T1>::value
+                 && is_float3_type<T2>::value, FloatGrad<float3>>
+fmodf(T1 a, T2 b) { 
+    return make_float3(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z));
+}
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T1>::value
+                 && is_float4_type<T2>::value, FloatGrad<float4>>
+fmodf(T1 a, T2 b) { 
+    return make_float4(fmodf(a.x, b.x), fmodf(a.y, b.y), 
+                       fmodf(a.z, b.z), fmodf(a.w, b.w));
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // absolute value
 ////////////////////////////////////////////////////////////////////////////////
@@ -1138,6 +1318,19 @@ inline __host__ __device__ float3 fabs(float3 v) {
 inline __host__ __device__ float4 fabs(float4 v) {
   return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
 }
+
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+fabs(T v) { return make_float2(fabs(v.x), fabs(v.y)); }
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+fabs(T v) { return make_float3(fabs(v.x), fabs(v.y), fabs(v.z)); }
+template <typename T>
+inline __host__ __device__
+std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+fabs(T v) { return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w)); }
 
 inline __host__ __device__ int2 abs(int2 v) { return make_int2(abs(v.x), abs(v.y)); }
 inline __host__ __device__ int3 abs(int3 v) { return make_int3(abs(v.x), abs(v.y), abs(v.z)); }
@@ -1153,11 +1346,27 @@ inline __host__ __device__ int4 abs(int4 v) {
 
 inline __host__ __device__ float3 reflect(float3 i, float3 n) { return i - 2.0f * n * dot(n, i); }
 
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T1>::value
+                 && is_float3_type<T2>::value, FloatGrad<float3>>
+reflect(T1 i, T2 n) { 
+  return i - 2.0f * n * dot(n, i); 
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // cross product
 ////////////////////////////////////////////////////////////////////////////////
 
 inline __host__ __device__ float3 cross(float3 a, float3 b) {
+  return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+template <typename T1, typename T2>
+inline __host__ __device__
+std::enable_if_t<is_float3_type<T1>::value
+                 && is_float3_type<T2>::value, FloatGrad<float3>>
+cross(T1 a, T2 b) { 
   return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
@@ -1183,6 +1392,36 @@ inline __device__ __host__ float3 smoothstep(float3 a, float3 b, float3 x) {
 inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x) {
   float4 y = clamp((x - a) / (b - a), 0.0f, 1.0f);
   return (y * y * (make_float4(3.0f) - (make_float4(2.0f) * y)));
+}
+
+template <typename T1, typename T2, typename T3>
+inline __host__ __device__
+auto smoothstep(T1 a, T2 b, T3 x) { 
+  if constexpr (is_float_type<T1>::value 
+                && is_float_type<T2>::value 
+                && is_float_type<T3>::value) {
+    FloatGrad<float> y = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return (y * y * (3.0f - (2.0f * y)));
+  } else if constexpr (is_float2_type<T1>::value 
+                       && is_float2_type<T2>::value 
+                       && is_float2_type<T3>::value) {
+    FloatGrad<float2> y = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return (y * y * (make_float2(3.0f) - (make_float2(2.0f) * y)));
+  } else if constexpr (is_float3_type<T1>::value 
+                       && is_float3_type<T2>::value 
+                       && is_float3_type<T3>::value) {
+    FloatGrad<float3> y = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return (y * y * (make_float3(3.0f) - (make_float3(2.0f) * y)));
+  } else if constexpr (is_float4_type<T1>::value 
+                       && is_float4_type<T2>::value 
+                       && is_float4_type<T3>::value) {
+    FloatGrad<float4> y = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return (y * y * (make_float4(3.0f) - (make_float4(2.0f) * y)));
+  } else {
+    static_assert(always_false<T1>::value 
+                  && always_false<T2>::value 
+                  && always_false<T3>::value, "Unsupported type combination for smoothstep");
+  }
 }
 
 #endif
