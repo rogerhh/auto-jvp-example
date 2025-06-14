@@ -27,6 +27,7 @@ add_executable(auto_jvp_tests
     test_floatgrad_float3.cu
     test_floatgrad_float4.cu
     test_helper_math.cu
+    test_floatgrad_array.cu
 )
 
 message(STATUS "${PROJECT_SOURCE_DIR}/../../cuda")

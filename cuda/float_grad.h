@@ -2,9 +2,48 @@
 #define FLOAT_GRAD_H
 
 #include <type_traits>
+#include <iostream>
 
 template <typename FloatType>
 struct FloatGrad;
+
+template <typename FloatType>
+struct FloatGradRef;
+
+/////////////////////////////////////////////////////////////////////////////
+/// SFINAE utility
+/////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+struct always_false : std::false_type {};
+
+template <typename T>
+struct is_float_grad : std::false_type {};
+template <typename FloatType>
+struct is_float_grad<FloatGradRef<FloatType>> : std::true_type {};
+template <typename FloatType>
+struct is_float_grad<FloatGrad<FloatType>> : std::true_type {};
+
+template <typename T>
+struct is_float_grad_ref : std::false_type {};
+template <typename FloatType>
+struct is_float_grad_ref<FloatGradRef<FloatType>> : std::true_type {};
+
+template <typename T>
+struct is_float_grad_val : std::false_type {};
+template <typename FloatType>
+struct is_float_grad_val<FloatGrad<FloatType>> : std::true_type {};
+
+template <typename T>
+struct extract_float_grad_type { using type = T; };
+template <typename FloatType>
+struct extract_float_grad_type<FloatGrad<FloatType>> { using type = FloatType; };
+template <typename FloatType>
+struct extract_float_grad_type<FloatGradRef<FloatType>> { using type = FloatType; };
+
+/////////////////////////////////////////////////////////////////////////////
+/// Class definitions
+/////////////////////////////////////////////////////////////////////////////
 
 template <typename FloatType>
 struct FloatGradRef {
@@ -15,25 +54,38 @@ struct FloatGradRef {
     // Delete default constructor to prevent uninitialized usage
     FloatGradRef() = delete;
 
+    // Base constructor
     __host__ __device__
     FloatGradRef(FloatType* data_ptr, FloatType* grad_ptr)
         : data_ptr_(data_ptr), grad_ptr_(grad_ptr) {}
 
+    // Constructing from reference type
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGradRef(const FloatGradRef& other)
+    FloatGradRef(const FloatGradRef<U>& other)
         : data_ptr_(other.data_ptr_), grad_ptr_(other.grad_ptr_) {}
+    
+    // Constructing reference type from value type disabled
 
+    // Assigning from reference type
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGradRef& operator=(const FloatGradRef& other) {
-        if (this != &other) {
-            *data_ptr_ = *other.data_ptr_;
-            *grad_ptr_ = *other.grad_ptr_;
-        }
+    FloatGradRef& operator=(const FloatGradRef<U>& other) {
+        *data_ptr_ = *other.data_ptr_;
+        *grad_ptr_ = *other.grad_ptr_;
         return *this;
     }
 
+    // Assigning from value type
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGradRef& operator=(const FloatGrad<FloatType>& other) {
+    FloatGradRef& operator=(const FloatGrad<U>& other) {
         *data_ptr_ = other.data_;
         *grad_ptr_ = other.grad_;
         return *this;
@@ -67,25 +119,41 @@ struct FloatGrad {
     FloatGrad(const FloatType& data, const FloatType& grad)
         : data_(data), grad_(grad) {}
 
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGrad(const FloatGrad& other)
+    FloatGrad(const FloatGrad<U>& other)
         : data_(other.data_), grad_(other.grad_) {}
 
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGrad(const FloatGradRef<FloatType>& ref)
+    FloatGrad(const FloatGradRef<U>& ref)
         : data_(*ref.data_ptr_), grad_(*ref.grad_ptr_) {}
 
+    template <typename U = FloatType, std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                       float>, int> = 0>
     __host__ __device__
-    FloatGrad& operator=(const FloatGrad& other) {
-        if (this != &other) {
-            data_ = other.data_;
-            grad_ = other.grad_;
-        }
+    FloatGrad(const FloatType& data)
+        : data_(data), grad_(0.0f) {}
+
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
+    __host__ __device__
+    FloatGrad& operator=(const FloatGrad<U>& other) {
+        data_ = other.data_;
+        grad_ = other.grad_;
         return *this;
     }
 
+    template <typename U = FloatType, 
+              typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
+                                                         std::remove_const_t<FloatType>>>>
     __host__ __device__
-    FloatGrad& operator=(const FloatGradRef<FloatType>& ref) {
+    FloatGrad& operator=(const FloatGradRef<U>& ref) {
         data_ = *ref.data_ptr_;
         grad_ = *ref.grad_ptr_;
         return *this;
@@ -137,30 +205,6 @@ struct FloatGradArray {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-struct always_false : std::false_type {};
-
-template <typename T>
-struct is_float_grad : std::false_type {};
-
-template <typename FloatType>
-struct is_float_grad<FloatGradRef<FloatType>> : std::true_type {};
-
-template <typename FloatType>
-struct is_float_grad<FloatGrad<FloatType>> : std::true_type {};
-
-template <typename T>
-struct is_float_grad_ref : std::false_type {};
-
-template <typename FloatType>
-struct is_float_grad_ref<FloatGradRef<FloatType>> : std::true_type {};
-
-template <typename T>
-struct is_float_grad_val : std::false_type {};
-
-template <typename FloatType>
-struct is_float_grad_val<FloatGrad<FloatType>> : std::true_type {};
-
-template <typename T>
 __host__ __device__
 decltype(auto) get_data(const T& t) {
     if constexpr (is_float_grad<T>::value) {
@@ -177,7 +221,7 @@ decltype(auto) get_grad(const T& t) {
     if constexpr (is_float_grad<T>::value) {
         return t.grad();
     }
-    else if constexpr (std::is_same_v<T, float>) {
+    else if constexpr (std::is_same_v<std::remove_cv_t<T>, float>) {
         return 0.0f; // Default gradient for non-Floatgrad floats
     }
     else {
@@ -389,8 +433,11 @@ operator/=(T t, const OtherType& other) {
 
 #include "float_grad_float.h"
 #include "float_grad_float2.h"
+#include "float_grad_const_float2.h"
 #include "float_grad_float3.h"
+#include "float_grad_const_float3.h"
 #include "float_grad_float4.h"
+#include "float_grad_const_float4.h"
 
 
 #endif // FLOAT_GRAD_H

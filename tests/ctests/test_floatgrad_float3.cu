@@ -42,6 +42,16 @@ TEST(FloatGradFloat3, VectorElementAccess) {
                                               float3{0.1f, 1.6f, 1.10f})));
     EXPECT_TRUE(float_eq(b, FloatGrad<float3>(float3{3.0f, 4.0f, 6.0f}, 
                                               float3{0.3f, 0.4f, 0.6f})));
+
+    FloatGrad<const float3> c(a_data, a_grad);
+    FloatGradRef<const float3> d(&b_data, &b_grad);
+
+    EXPECT_TRUE(float_eq(c.x, FloatGrad<float>(1.0f, 0.1f)));
+    EXPECT_TRUE(float_eq(c.y, FloatGrad<float>(2.0f, 0.2f)));
+    EXPECT_TRUE(float_eq(c.z, FloatGrad<float>(5.0f, 0.5f)));
+    EXPECT_TRUE(float_eq(d.x, FloatGrad<float>(3.0f, 0.3f)));
+    EXPECT_TRUE(float_eq(d.y, FloatGrad<float>(4.0f, 0.4f)));
+    EXPECT_TRUE(float_eq(d.z, FloatGrad<float>(6.0f, 0.6f)));
 }
 
 TEST(FloatGradFloat3, VectorOperators) {
