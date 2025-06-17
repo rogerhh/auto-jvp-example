@@ -190,10 +190,12 @@ struct FloatGradArray {
     FloatGradArray(FloatType* data, FloatType* grad)
         : data_arr_(data), grad_arr_(grad) {}
 
+    __host__ __device__
     FloatGradRef<FloatType> operator[](int index) {
         return FloatGradRef<FloatType>(data_arr_ + index, grad_arr_ + index);
     }
 
+    __host__ __device__
     FloatGrad<FloatType> operator[](int index) const {
         return FloatGrad<FloatType>(data_arr_[index], grad_arr_[index]);
     }
@@ -431,13 +433,13 @@ operator/=(T t, const OtherType& other) {
     return t;
 }
 
-#include "float_grad_float.h"
-#include "float_grad_float2.h"
-#include "float_grad_const_float2.h"
-#include "float_grad_float3.h"
-#include "float_grad_const_float3.h"
-#include "float_grad_float4.h"
-#include "float_grad_const_float4.h"
+#include "cuda/float_grad_float.h"
+#include "cuda/float_grad_float2.h"
+#include "cuda/float_grad_const_float2.h"
+#include "cuda/float_grad_float3.h"
+#include "cuda/float_grad_const_float3.h"
+#include "cuda/float_grad_float4.h"
+#include "cuda/float_grad_const_float4.h"
 
 
 #endif // FLOAT_GRAD_H
