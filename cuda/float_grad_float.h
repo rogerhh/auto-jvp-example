@@ -1,17 +1,10 @@
 #ifndef FLOAT_GRAD_FLOAT_H
 #define FLOAT_GRAD_FLOAT_H
 
-// template <> struct FloatGrad<float>;
-// template <> struct FloatGradRef<float>;
+#include <type_traits>
 
-template <typename T> struct is_float_type : std::false_type {};
-template <> struct is_float_type<float> : std::true_type {};
-template <> struct is_float_type<FloatGrad<float>> : std::true_type {};
-template <> struct is_float_type<FloatGradRef<float>> : std::true_type {};
-
-template <> struct is_float_type<const float> : std::true_type {};
-template <> struct is_float_type<FloatGrad<const float>> : std::true_type {};
-template <> struct is_float_type<FloatGradRef<const float>> : std::true_type {};
+template <typename T>
+using is_float_type = std::is_same<std::decay_t<decltype(get_data(std::declval<T>()))>, float>;
 
 //////////////////////////////////////////////////////////////////////////////
 /// Additional builtin functions

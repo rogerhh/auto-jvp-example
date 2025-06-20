@@ -1,56 +1,28 @@
 #ifndef FLOAT_GRAD_FLOAT4_H
 #define FLOAT_GRAD_FLOAT4_H
 
-template <> struct FloatGrad<float4>;
-template <> struct FloatGradRef<float4>;
-
-template <typename T> struct is_float4_type : std::false_type {};
-template <> struct is_float4_type<float4> : std::true_type {};
-template <> struct is_float4_type<FloatGrad<float4>> : std::true_type {};
-template <> struct is_float4_type<FloatGradRef<float4>> : std::true_type {};
+template <typename T>
+using is_float4_type = std::is_same<std::decay_t<decltype(get_data(std::declval<T>()))>, float4>;
 
 template <>
-struct FloatGradRef<float4> {
-    // Delete default constructor to prevent uninitialized usage
-    FloatGradRef() = delete;
-
+struct FloatGradRef<float4> : FloatGradRefBase<float4> {
+    // All constructors
+    template <typename... Args>
     __host__ __device__
-    FloatGradRef(float4* data_ptr, float4* grad_ptr);
+    FloatGradRef(Args&&... args)
+    : FloatGradRefBase<float4>(std::forward<Args>(args)...),
+      x(&data().x, &grad().x), 
+      y(&data().y, &grad().y),
+      z(&data().z, &grad().z),
+      w(&data().w, &grad().w) {}
 
+    // All assignment operators
+    template <typename OtherType>
     __host__ __device__
-    FloatGradRef(const FloatGradRef& other);
-
-    __host__ __device__
-    FloatGradRef& operator=(const FloatGradRef& other) {
-        if (this != &other) {
-            *data_ptr_ = *other.data_ptr_;
-            *grad_ptr_ = *other.grad_ptr_;
-        }
+    FloatGradRef& operator=(const OtherType& other) {
+        FloatGradRefBase<float4>::operator=(other);
         return *this;
     }
-
-    __host__ __device__
-    FloatGradRef& operator=(const FloatGrad<float4>& other);
-
-    __host__ __device__
-    float4& data() {
-        return *data_ptr_;
-    }
-    __host__ __device__
-    const float4& data() const {
-        return *data_ptr_;
-    }
-    __host__ __device__
-    float4& grad() {
-        return *grad_ptr_;
-    }
-    __host__ __device__
-    const float4& grad() const {
-        return *grad_ptr_;
-    }
-
-    float4* data_ptr_;
-    float4* grad_ptr_;
 
     FloatGradRef<float> x;
     FloatGradRef<float> y;
@@ -59,54 +31,24 @@ struct FloatGradRef<float4> {
 };
 
 template <>
-struct FloatGrad<float4> {
+struct FloatGrad<float4> : FloatGradBase<float4> {
+    // All constructors
+    template <typename... Args>
     __host__ __device__
-    FloatGrad(const float4& data);
+    FloatGrad(Args&&... args)
+    : FloatGradBase<float4>(std::forward<Args>(args)...),
+      x(&data().x, &grad().x), 
+      y(&data().y, &grad().y),
+      z(&data().z, &grad().z),
+      w(&data().w, &grad().w) {}
 
+    // All assignment operators
+    template <typename OtherType>
     __host__ __device__
-    FloatGrad(const float4& data, const float4& grad);
-
-    __host__ __device__
-    FloatGrad(const FloatGrad& other);
-
-    __host__ __device__
-    FloatGrad(const FloatGradRef<float4>& ref);
-
-    __host__ __device__
-    FloatGrad& operator=(const FloatGrad& other) {
-        if (this != &other) {
-            data_ = other.data_;
-            grad_ = other.grad_;
-        }
+    FloatGrad& operator=(const OtherType& other) {
+        FloatGradBase<float4>::operator=(other);
         return *this;
     }
-
-    __host__ __device__
-    FloatGrad& operator=(const FloatGradRef<float4>& ref) {
-        data_ = *ref.data_ptr_;
-        grad_ = *ref.grad_ptr_;
-        return *this;
-    }
-
-    __host__ __device__
-    float4& data() {
-        return data_;
-    }
-    __host__ __device__
-    const float4& data() const {
-        return data_;
-    }
-    __host__ __device__
-    float4& grad() {
-        return grad_;
-    }
-    __host__ __device__
-    const float4& grad() const {
-        return grad_;
-    }
-
-    float4 data_;
-    float4 grad_;
 
     FloatGradRef<float> x;
     FloatGradRef<float> y;
@@ -114,52 +56,39 @@ struct FloatGrad<float4> {
     FloatGradRef<float> w;
 };
 
-__host__ __device__
-inline FloatGradRef<float4>::FloatGradRef(float4* data_ptr, float4* grad_ptr)
-    : data_ptr_(data_ptr), grad_ptr_(grad_ptr),
-      x(&data_ptr_->x, &grad_ptr_->x),
-      y(&data_ptr_->y, &grad_ptr_->y),
-      z(&data_ptr_->z, &grad_ptr_->z),
-      w(&data_ptr_->w, &grad_ptr_->w) {}
+template <>
+struct FloatGradRef<const float4> : FloatGradRefBase<const float4> {
+    template <typename... Args>
+    __host__ __device__
+    FloatGradRef(Args&&... args)
+    : FloatGradRefBase<const float4>(std::forward<Args>(args)...),
+      x(&data().x, &grad().x), 
+      y(&data().y, &grad().y),
+      z(&data().z, &grad().z),
+      w(&data().w, &grad().w) {}
 
-__host__ __device__
-inline FloatGradRef<float4>::FloatGradRef(const FloatGradRef<float4>& other)
-    : data_ptr_(other.data_ptr_), grad_ptr_(other.grad_ptr_),
-      x(&data_ptr_->x, &grad_ptr_->x),
-      y(&data_ptr_->y, &grad_ptr_->y),
-      z(&data_ptr_->z, &grad_ptr_->z),
-      w(&data_ptr_->w, &grad_ptr_->w) {}
+    FloatGradRef<const float> x;
+    FloatGradRef<const float> y;
+    FloatGradRef<const float> z;
+    FloatGradRef<const float> w;
+};
 
-__host__ __device__
-inline FloatGradRef<float4>& FloatGradRef<float4>::operator=(const FloatGrad<float4>& other) {
-    *data_ptr_ = other.data_;
-    *grad_ptr_ = other.grad_;
-    return *this;
-}
+template <>
+struct FloatGrad<const float4> : FloatGradBase<const float4> {
+    template <typename... Args>
+    __host__ __device__
+    FloatGrad(Args&&... args)
+    : FloatGradBase<const float4>(std::forward<Args>(args)...),
+      x(&data().x, &grad().x), 
+      y(&data().y, &grad().y),
+      z(&data().z, &grad().z),
+      w(&data().w, &grad().w) {}
 
-__host__ __device__
-inline FloatGrad<float4>::FloatGrad(const float4& data)
-    : data_(data), grad_(float4{0.0f, 0.0f, 0.0f, 0.0f}),
-      x(&data_.x, &grad_.x), y(&data_.y, &grad_.y), 
-      z(&data_.z, &grad_.z), w(&data_.w, &grad_.w) {}
-
-__host__ __device__
-inline FloatGrad<float4>::FloatGrad(const float4& data, const float4& grad)
-    : data_(data), grad_(grad),
-      x(&data_.x, &grad_.x), y(&data_.y, &grad_.y), 
-      z(&data_.z, &grad_.z), w(&data_.w, &grad_.w) {}
-
-__host__ __device__
-inline FloatGrad<float4>::FloatGrad(const FloatGrad<float4>& other)
-    : data_(other.data_), grad_(other.grad_),
-      x(&data_.x, &grad_.x), y(&data_.y, &grad_.y), 
-      z(&data_.z, &grad_.z), w(&data_.w, &grad_.w) {}
-
-__host__ __device__
-inline FloatGrad<float4>::FloatGrad(const FloatGradRef<float4>& ref)
-    : data_(*ref.data_ptr_), grad_(*ref.grad_ptr_),
-      x(&data_.x, &grad_.x), y(&data_.y, &grad_.y), 
-      z(&data_.z, &grad_.z), w(&data_.w, &grad_.w) {}
+    FloatGradRef<const float> x;
+    FloatGradRef<const float> y;
+    FloatGradRef<const float> z;
+    FloatGradRef<const float> w;
+};
 
 template <typename T1, typename T2, typename T3, typename T4,
           typename = std::enable_if_t<is_float_type<T1>::value
