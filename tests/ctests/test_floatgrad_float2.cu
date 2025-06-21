@@ -17,6 +17,12 @@ TEST(FloatGradFloat2, MakeFloat2) {
 
     EXPECT_TRUE(float_eq(b, FloatGrad<float2>(make_float2(3.0f, 4.0f), make_float2(0.3f, 0.0f))));
 
+    // Normal make float still needs to work
+    float2 c = make_float2(5.0f, 6.0f);
+
+    EXPECT_TRUE(float_eq(c.x, 5.0f));
+    EXPECT_TRUE(float_eq(c.y, 6.0f));
+
 }
 
 TEST(FloatGradFloat2, VectorElementAccess) {
