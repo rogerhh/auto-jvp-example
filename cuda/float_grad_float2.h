@@ -76,7 +76,9 @@ struct FloatGrad<const float2> : FloatGradBase<const float2> {
 
 template <typename T1, typename T2,
           typename = std::enable_if_t<is_float_type<T1>::value
-                                      && is_float_type<T2>::value>>
+                                      && is_float_type<T2>::value
+                                      && (is_float_grad<T1>::value 
+                                         || is_float_grad<T2>::value)>>
 __host__ __device__
 inline FloatGrad<float2> make_float2(const T1& x, const T2& y) {
     return FloatGrad<float2>(float2{get_data(x), get_data(y)}, 

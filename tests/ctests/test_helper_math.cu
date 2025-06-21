@@ -5,6 +5,17 @@
 #include "test_utils.h"
 #include "helper_math.h"
 
+TEST(FloatGradHelperMathTest, TrueScalarOperations) {
+    // Need to make sure that normal float operations work as expected
+    float a = 4.0f;
+    auto b = sqrtf(a);
+    EXPECT_TRUE(float_eq(b, 2.0f)) << "Expected: 2.0, Got: " << b;
+
+    double c = 9.0;
+    auto d = fabs(c);
+    EXPECT_TRUE(float_eq(d, 9.0)) << "Expected: 9.0, Got: " << d;
+}
+
 TEST(FloatGradHelperMathTest, FloatOperations) {
     float test = fminf(0.3, 0.4);
     EXPECT_FLOAT_EQ(test, 0.3f) << "Expected: 0.3, Got: " << test;
@@ -306,6 +317,9 @@ TEST(FloatGradHelperMathTest, FabsFunctions) {
 
     EXPECT_TRUE(float_eq(b, FloatGrad<float3>(make_float3(1.1f, 2.9f, 3.5f), 
                                               make_float3(0.1f, -0.2f, 0.3f))));
+
+    // fabs needs to work with normal float3 as well
+    float3 c = fabs(a_data);
 
 }
 

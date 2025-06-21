@@ -69,17 +69,20 @@ inline float rsqrtf(float x) { return 1.0f / sqrtf(x); }
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float_type<T1>::value && is_float_type<T2>::value,
+std::enable_if_t<is_float_type<T1>::value && is_float_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float>>
 fminf(T1 a, T2 b) { return a < b ? FloatGrad<float>(a) : FloatGrad<float>(b); }
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float_type<T1>::value && is_float_type<T2>::value,
+std::enable_if_t<is_float_type<T1>::value && is_float_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float>>
 fmaxf(T1 a, T2 b) { return a > b ? FloatGrad<float>(a) : FloatGrad<float>(b); }
 
-template <typename T1, typename = std::enable_if_t<is_float_type<T1>::value>>
+template <typename T1, typename = std::enable_if_t<is_float_type<T1>::value
+                                                   && is_float_grad<T1>::value>>
 inline __host__ __device__
 FloatGrad<float> rsqrtf(T1 x) { return 1.0f / sqrtf(x); }
 
@@ -98,11 +101,11 @@ inline __host__ __device__ float2 make_float2(uint2 a) {
 
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float_type<T1>::value, FloatGrad<float2>>
+std::enable_if_t<is_float_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float2>>
 make_float2(T1 s) { return make_float2(s, s); }
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float3_type<T1>::value, FloatGrad<float2>>
+std::enable_if_t<is_float3_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float2>>
 make_float2(T1 a) { return make_float2(a.x, a.y); }
 
 inline __host__ __device__ int2 make_int2(int s) { return make_int2(s, s); }
@@ -129,21 +132,22 @@ inline __host__ __device__ float3 make_float3(uint3 a) {
 
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float_type<T1>::value, FloatGrad<float3>>
+std::enable_if_t<is_float_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float3>>
 make_float3(T1 s) { return make_float3(s, s, s); }
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float2_type<T1>::value, FloatGrad<float3>>
+std::enable_if_t<is_float2_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float3>>
 make_float3(T1 a) { return make_float2(a.x, a.y, 0.0f); }
 template <typename T1, typename T2>
 inline __host__ __device__ 
 std::enable_if_t<is_float2_type<T1>::value
-                 && is_float_type<T2>::value,
+                 && is_float_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float3>>
 make_float3(T1 a, T2 s) { return make_float3(a.x, a.y, s); }
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float4_type<T1>::value,
+std::enable_if_t<is_float4_type<T1>::value && is_float_grad<T1>::value,
                  FloatGrad<float3>>
 make_float3(T1 a) { return make_float3(a.x, a.y, a.z); }
 
@@ -179,16 +183,17 @@ inline __host__ __device__ float4 make_float4(uint4 a) {
 
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float_type<T1>::value, FloatGrad<float4>>
+std::enable_if_t<is_float_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float4>>
 make_float4(T1 s) { return make_float4(s, s, s, s); }
 template <typename T1>
 inline __host__ __device__ 
-std::enable_if_t<is_float3_type<T1>::value, FloatGrad<float4>>
+std::enable_if_t<is_float3_type<T1>::value && is_float_grad<T1>::value, FloatGrad<float4>>
 make_float4(T1 a) { return make_float4(a.x, a.y, a.z, 0.0f); }
 template <typename T1, typename T2>
 inline __host__ __device__ 
 std::enable_if_t<is_float3_type<T1>::value
-                 && is_float_type<T2>::value,
+                 && is_float_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float4>>
 make_float4(T1 a, T2 s) { return make_float4(a.x, a.y, a.z, s); }
 
@@ -226,15 +231,15 @@ inline __host__ __device__ int4 operator-(const int4 &a) { return make_int4(-a.x
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+std::enable_if_t<is_float2_type<T>::value && is_float_grad<T>::value, FloatGrad<float2>>
 operator-(const T &a) { return make_float2(-a.x, -a.y); }
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T>::value && is_float_grad<T>::value, FloatGrad<float3>>
 operator-(const T &a) { return make_float3(-a.x, -a.y, -a.z); }
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+std::enable_if_t<is_float4_type<T>::value && is_float_grad<T>::value, FloatGrad<float4>>
 operator-(const T &a) { return make_float4(-a.x, -a.y, -a.z, -a.w); }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -843,21 +848,24 @@ inline __host__ __device__ float4 fminf(float4 a, float4 b) {
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value, 
+std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float2>>
 fminf(T1 a, T2 b) {
     return make_float2(fminf(a.x, b.x), fminf(a.y, b.y));
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value, 
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float3>>
 fminf(T1 a, T2 b) {
     return make_float3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z));
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value, 
+std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
                  FloatGrad<float4>>
 fminf(T1 a, T2 b) {
     return make_float4(fminf(a.x, b.x), fminf(a.y, b.y),
@@ -900,21 +908,24 @@ inline __host__ __device__ float4 fmaxf(float4 a, float4 b) {
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value, 
+std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float2>>
 fmaxf(T1 a, T2 b) {
     return make_float2(fmaxf(a.x, b.x), fmaxf(a.y, b.y));
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value, 
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float3>>
 fmaxf(T1 a, T2 b) {
     return make_float3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z));
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value, 
+std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float4>>
 fmaxf(T1 a, T2 b) {
     return make_float4(fmaxf(a.x, b.x), fmaxf(a.y, b.y),
@@ -955,7 +966,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float_type<T1>::value 
                  && is_float_type<T2>::value 
-                 && is_float_type<T3>::value, 
+                 && is_float_type<T3>::value
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float>>
 lerp(T1 a, T2 b, T3 t) { return a + t * (b - a); }
 
@@ -963,7 +977,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float2_type<T1>::value 
                  && is_float2_type<T2>::value 
-                 && is_float_type<T3>::value, 
+                 && is_float_type<T3>::value
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float2>>
 lerp(T1 a, T2 b, T3 t) { return a + t * (b - a); }
 
@@ -971,7 +988,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float3_type<T1>::value 
                  && is_float3_type<T2>::value 
-                 && is_float_type<T3>::value,
+                 && is_float_type<T3>::value
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value),
                  FloatGrad<float3>>
 lerp(T1 a, T2 b, T3 t) { return a + t * (b - a); }
 
@@ -979,7 +999,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float4_type<T1>::value 
                  && is_float4_type<T2>::value 
-                 && is_float_type<T3>::value,
+                 && is_float_type<T3>::value
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value),
                  FloatGrad<float4>>
 lerp(T1 a, T2 b, T3 t) { return a + t * (b - a); }
 
@@ -1016,14 +1039,20 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float_type<T1>::value 
                  && is_float_type<T2>::value 
-                 && is_float_type<T3>::value, 
+                 && is_float_type<T3>::value
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float>>
 clamp(T1 f, T2 a, T3 b) { return fmaxf(a, fminf(f, b)); }
 template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float2_type<T1>::value 
                  && ((is_float_type<T2>::value && is_float_type<T3>::value)
-                 || (is_float2_type<T2>::value && is_float2_type<T3>::value)), 
+                 || (is_float2_type<T2>::value && is_float2_type<T3>::value))
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float2>>
 clamp(T1 v, T2 a, T3 b) { 
     if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
@@ -1042,7 +1071,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float3_type<T1>::value 
                  && ((is_float_type<T2>::value && is_float_type<T3>::value)
-                 || (is_float3_type<T2>::value && is_float3_type<T3>::value)), 
+                     || (is_float3_type<T2>::value && is_float3_type<T3>::value))
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float3>>
 clamp(T1 v, T2 a, T3 b) { 
     if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
@@ -1061,7 +1093,10 @@ template <typename T1, typename T2, typename T3>
 inline __device__ __host__
 std::enable_if_t<is_float4_type<T1>::value 
                  && ((is_float_type<T2>::value && is_float_type<T3>::value)
-                 || (is_float4_type<T2>::value && is_float4_type<T3>::value)), 
+                     || (is_float4_type<T2>::value && is_float4_type<T3>::value))
+                 && (is_float_grad<T1>::value 
+                     || is_float_grad<T2>::value 
+                     || is_float_grad<T3>::value), 
                  FloatGrad<float4>>
 clamp(T1 v, T2 a, T3 b) { 
     if constexpr (is_float_type<T2>::value && is_float_type<T3>::value) {
@@ -1133,21 +1168,24 @@ inline __host__ __device__ float dot(float4 a, float4 b) {
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value, 
+std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float>>
 dot(T1 a, T2 b) { 
     return a.x * b.x + a.y * b.y;
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value, 
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float>>
 dot(T1 a, T2 b) { 
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value, 
+std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
                  FloatGrad<float>>
 dot(T1 a, T2 b) { 
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
@@ -1175,9 +1213,10 @@ inline __host__ __device__ float length(float4 v) { return sqrtf(dot(v, v)); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value
-                 || is_float3_type<T>::value
-                 || is_float4_type<T>::value, FloatGrad<float>>
+std::enable_if_t<(is_float2_type<T>::value
+                  || is_float3_type<T>::value
+                  || is_float4_type<T>::value)
+                  && is_float_grad<T>::value, FloatGrad<float>>
 length(T v) { 
     return sqrtf(dot(v, v));
 }
@@ -1201,9 +1240,10 @@ inline __host__ __device__ float4 normalize(float4 v) {
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value
-                 || is_float3_type<T>::value
-                 || is_float4_type<T>::value, T>
+std::enable_if_t<(is_float2_type<T>::value
+                  || is_float3_type<T>::value
+                  || is_float4_type<T>::value)
+                  && is_float_grad<T>::value, T>
 normalize(T v) { 
     FloatGrad<float> invLen = rsqrtf(dot(v, v));
     return v * invLen;
@@ -1223,17 +1263,17 @@ inline __host__ __device__ float4 floorf(float4 v) {
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+std::enable_if_t<is_float2_type<T>::value && is_float_grad<T>::value, FloatGrad<float2>>
 floorf(T v) { return make_float2(floorf(v.x), floorf(v.y)); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T>::value && is_float_grad<T>::value, FloatGrad<float3>>
 floorf(T v) { return make_float3(floorf(v.x), floorf(v.y), floorf(v.z)); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+std::enable_if_t<is_float4_type<T>::value && is_float_grad<T>::value, FloatGrad<float4>>
 floorf(T v) { return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w)); }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1251,22 +1291,22 @@ inline __host__ __device__ float4 fracf(float4 v) {
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float_type<T>::value, FloatGrad<float>>
+std::enable_if_t<is_float_type<T>::value && is_float_grad<T>::value, FloatGrad<float>>
 fracf(T v) { return v - floorf(v); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+std::enable_if_t<is_float2_type<T>::value && is_float_grad<T>::value, FloatGrad<float2>>
 fracf(T v) { return make_float2(fracf(v.x), fracf(v.y)); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T>::value && is_float_grad<T>::value, FloatGrad<float3>>
 fracf(T v) { return make_float3(fracf(v.x), fracf(v.y), fracf(v.z)); }
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+std::enable_if_t<is_float4_type<T>::value && is_float_grad<T>::value, FloatGrad<float4>>
 fracf(T v) { return make_float4(fracf(v.x), fracf(v.y), fracf(v.z), fracf(v.w)); }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1285,22 +1325,25 @@ inline __host__ __device__ float4 fmodf(float4 a, float4 b) {
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T1>::value
-                 && is_float2_type<T2>::value, FloatGrad<float2>>
+std::enable_if_t<is_float2_type<T1>::value && is_float2_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
+                 FloatGrad<float2>>
 fmodf(T1 a, T2 b) { 
     return make_float2(fmodf(a.x, b.x), fmodf(a.y, b.y)); 
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value
-                 && is_float3_type<T2>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
+                 FloatGrad<float3>>
 fmodf(T1 a, T2 b) { 
     return make_float3(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z));
 }
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T1>::value
-                 && is_float4_type<T2>::value, FloatGrad<float4>>
+std::enable_if_t<is_float4_type<T1>::value && is_float4_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value), 
+                 FloatGrad<float4>>
 fmodf(T1 a, T2 b) { 
     return make_float4(fmodf(a.x, b.x), fmodf(a.y, b.y), 
                        fmodf(a.z, b.z), fmodf(a.w, b.w));
@@ -1321,15 +1364,15 @@ inline __host__ __device__ float4 fabs(float4 v) {
 
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float2_type<T>::value, FloatGrad<float2>>
+std::enable_if_t<is_float2_type<T>::value && is_float_grad<T>::value, FloatGrad<float2>>
 fabs(T v) { return make_float2(fabs(v.x), fabs(v.y)); }
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T>::value && is_float_grad<T>::value, FloatGrad<float3>>
 fabs(T v) { return make_float3(fabs(v.x), fabs(v.y), fabs(v.z)); }
 template <typename T>
 inline __host__ __device__
-std::enable_if_t<is_float4_type<T>::value, FloatGrad<float4>>
+std::enable_if_t<is_float4_type<T>::value && is_float_grad<T>::value, FloatGrad<float4>>
 fabs(T v) { return make_float4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w)); }
 
 inline __host__ __device__ int2 abs(int2 v) { return make_int2(abs(v.x), abs(v.y)); }
@@ -1348,8 +1391,9 @@ inline __host__ __device__ float3 reflect(float3 i, float3 n) { return i - 2.0f 
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value
-                 && is_float3_type<T2>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
+                 FloatGrad<float3>>
 reflect(T1 i, T2 n) { 
   return i - 2.0f * n * dot(n, i); 
 }
@@ -1364,8 +1408,9 @@ inline __host__ __device__ float3 cross(float3 a, float3 b) {
 
 template <typename T1, typename T2>
 inline __host__ __device__
-std::enable_if_t<is_float3_type<T1>::value
-                 && is_float3_type<T2>::value, FloatGrad<float3>>
+std::enable_if_t<is_float3_type<T1>::value && is_float3_type<T2>::value
+                 && (is_float_grad<T1>::value || is_float_grad<T2>::value),
+                 FloatGrad<float3>>
 cross(T1 a, T2 b) { 
   return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
@@ -1394,7 +1439,11 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x) {
   return (y * y * (make_float4(3.0f) - (make_float4(2.0f) * y)));
 }
 
-template <typename T1, typename T2, typename T3>
+template <typename T1, typename T2, typename T3,
+          typename = std::enable_if_t<
+                         is_float_grad<T1>::value 
+                         || is_float_grad<T2>::value 
+                         || is_float_grad<T3>::value>>
 inline __host__ __device__
 auto smoothstep(T1 a, T2 b, T3 x) { 
   if constexpr (is_float_type<T1>::value 

@@ -94,7 +94,11 @@ template <typename T1, typename T2, typename T3, typename T4,
           typename = std::enable_if_t<is_float_type<T1>::value
                                       && is_float_type<T2>::value
                                       && is_float_type<T3>::value
-                                      && is_float_type<T4>::value>>
+                                      && is_float_type<T4>::value
+                                      && (is_float_grad<T1>::value
+                                          || is_float_grad<T2>::value
+                                          || is_float_grad<T3>::value
+                                          || is_float_grad<T4>::value)>>
 __host__ __device__
 inline FloatGrad<float4> make_float4(const T1& x, const T2& y, const T3& z, const T4& w) {
     return FloatGrad<float4>(float4{get_data(x), get_data(y), get_data(z), get_data(w)}, 
