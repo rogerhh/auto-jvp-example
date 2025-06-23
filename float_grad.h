@@ -57,6 +57,11 @@ struct FloatGradRefBase {
     FloatGradRefBase(FloatType* data_ptr, FloatType* grad_ptr)
         : data_ptr_(data_ptr), grad_ptr_(grad_ptr) {}
 
+    // Copy constructor
+    __host__ __device__
+    FloatGradRefBase(const FloatGradRefBase& other)
+        : data_ptr_(other.data_ptr_), grad_ptr_(other.grad_ptr_) {}
+
     // Constructing from reference type
     template <typename U = FloatType, 
               typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
@@ -68,14 +73,17 @@ struct FloatGradRefBase {
     // Constructing reference type from value type disabled
     // Use the FloatGrad.ref() function
 
-    template <typename OtherType>
+    // Default assignment operator
     __host__ __device__
-    FloatGradRefBase& operator=(const OtherType& other) &;
+    FloatGradRefBase& operator=(const FloatGradRefBase& other) {
+        data_ptr_ = other.data_ptr_;
+        grad_ptr_ = other.grad_ptr_;
+        return *this;
+    }
 
-    // Need to define the rvalue assignment operator
     template <typename OtherType>
     __host__ __device__
-    FloatGradRefBase&& operator=(const OtherType& other) &&;
+    FloatGradRefBase& operator=(const OtherType& other);
 
     __host__ __device__
     FloatType& data() {
@@ -135,12 +143,7 @@ struct FloatGradBase {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGradBase& operator=(const OtherType& other) &;
-
-    // Need to define the rvalue assignment operator
-    template <typename OtherType>
-    __host__ __device__
-    FloatGradBase&& operator=(const OtherType& other) &&;
+    FloatGradBase& operator=(const OtherType& other);
 
     __host__ __device__
     FloatType& data() {
@@ -166,18 +169,17 @@ template <typename FloatType>
 struct FloatGradRef : public FloatGradRefBase<FloatType> {
     using FloatGradRefBase<FloatType>::FloatGradRefBase;
 
-    template <typename OtherType>
     __host__ __device__
-    FloatGradRef& operator=(const OtherType& other) & {
+    FloatGradRef& operator=(const FloatGradRef& other) {
         FloatGradRefBase<FloatType>::operator=(other);
         return *this;
-    }
+    };
 
     template <typename OtherType>
     __host__ __device__
-    FloatGradRef&& operator=(OtherType& other) && {
+    FloatGradRef& operator=(const OtherType& other) {
         FloatGradRefBase<FloatType>::operator=(other);
-        return std::move(*this);
+        return *this;
     }
 };
 
@@ -187,16 +189,9 @@ struct FloatGrad : public FloatGradBase<FloatType> {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGrad& operator=(const OtherType& other) & {
+    FloatGrad& operator=(const OtherType& other) {
         FloatGradBase<FloatType>::operator=(other);
         return *this;
-    }
-
-    template <typename OtherType>
-    __host__ __device__
-    FloatGrad&& operator=(const OtherType& other) && {
-        FloatGradBase<FloatType>::operator=(other);
-        return std::move(*this);
     }
 };
 
@@ -294,7 +289,7 @@ FloatGradBase<FloatType>::FloatGradBase(Args&&... args)
 template <typename FloatType>
 template <typename OtherType>
 __host__ __device__
-FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherType& other) & {
+FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherType& other) {
     this->data() = get_data(other);
     this->grad() = get_grad(other);
     return *this;
@@ -303,28 +298,10 @@ FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherT
 template <typename FloatType>
 template <typename OtherType>
 __host__ __device__
-FloatGradRefBase<FloatType>&& FloatGradRefBase<FloatType>::operator=(const OtherType& other) && {
-    this->data() = get_data(other);
-    this->grad() = get_grad(other);
-    return std::move(*this);
-}
-
-template <typename FloatType>
-template <typename OtherType>
-__host__ __device__
-FloatGradBase<FloatType>& FloatGradBase<FloatType>::operator=(const OtherType& other) & {
+FloatGradBase<FloatType>& FloatGradBase<FloatType>::operator=(const OtherType& other) {
     this->data() = get_data(other);
     this->grad() = get_grad(other);
     return *this;
-}
-
-template <typename FloatType>
-template <typename OtherType>
-__host__ __device__
-FloatGradBase<FloatType>&& FloatGradBase<FloatType>::operator=(const OtherType& other) && {
-    this->data() = get_data(other);
-    this->grad() = get_grad(other);
-    return std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////////

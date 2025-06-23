@@ -157,12 +157,54 @@ TEST(FloatGradTest, ArrayElementAssignment) {
     FloatGradArray<float> b(b_data, b_grad);
 
     for(int i = 0; i < 10; i++) {
-        FloatGradRef<float> a_ref = a[i];
-        a_ref += (b[i] - a[i]);
+        // volatile auto tmp = a[i] = b[i];
+        FloatGradRef<float> aref(&a_data[i], &a_grad[i]);
+        FloatGradRef<float> bref(&b_data[i], &b_grad[i]);
+        aref = bref;
+
     }
 
     for(int i = 0; i < 10; i++) {
         EXPECT_TRUE(float_eq(a[i], b[i]));
     }
+
+
+    float c_data = -5.0f;
+    float c_grad = -1.0f;
+
+    FloatGradRef<float> c(&a_data[0], &a_grad[0]);
+
+    float d_data = 3.0f;
+    float d_grad = 0.5f;
+
+    FloatGradRef<float> d(&d_data, &d_grad);
+
+    c = d;
+
+}
+
+TEST(FloatGradTest, ArrayElementAssignmentVec2) {
+    float a_data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                        6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
+    float a_grad[10] = {1.0f, 0.9f, 0.8f, 0.7f, 0.6f,
+                        0.5f, 0.4f, 0.3f, 0.2f, 0.1f};
+    float b_data[10] = {2.0f, 4.0f, 6.0f, 8.0f, 10.0f,
+                        12.0f, 14.0f, 16.0f, 18.0f, 20.0f};
+    float b_grad[10] = {0.5f, 0.4f, 0.3f, 0.2f, 0.1f,
+                        0.05f, 0.04f, 0.03f, 0.02f, 0.01f};
+
+
+    FloatGradArray<float2> a((float2*) a_data, (float2*) a_grad);
+    FloatGradArray<float2> b((float2*) b_data, (float2*) b_grad);
+
+    for(int i = 0; i < 5; i++) {
+        a[i] = b[i];
+    }
+
+    for(int i = 0; i < 5; i++) {
+        EXPECT_TRUE(float_eq(a[i], b[i]));
+    }
+
+
 }
 
