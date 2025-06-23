@@ -70,7 +70,12 @@ struct FloatGradRefBase {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGradRefBase& operator=(const OtherType& other);
+    FloatGradRefBase& operator=(const OtherType& other) &;
+
+    // Need to define the rvalue assignment operator
+    template <typename OtherType>
+    __host__ __device__
+    FloatGradRefBase&& operator=(const OtherType& other) &&;
 
     __host__ __device__
     FloatType& data() {
@@ -130,7 +135,12 @@ struct FloatGradBase {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGradBase& operator=(const OtherType& other);
+    FloatGradBase& operator=(const OtherType& other) &;
+
+    // Need to define the rvalue assignment operator
+    template <typename OtherType>
+    __host__ __device__
+    FloatGradBase&& operator=(const OtherType& other) &&;
 
     __host__ __device__
     FloatType& data() {
@@ -158,9 +168,16 @@ struct FloatGradRef : public FloatGradRefBase<FloatType> {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGradRef& operator=(const OtherType& other) {
+    FloatGradRef& operator=(const OtherType& other) & {
         FloatGradRefBase<FloatType>::operator=(other);
         return *this;
+    }
+
+    template <typename OtherType>
+    __host__ __device__
+    FloatGradRef&& operator=(OtherType& other) && {
+        FloatGradRefBase<FloatType>::operator=(other);
+        return std::move(*this);
     }
 };
 
@@ -170,9 +187,16 @@ struct FloatGrad : public FloatGradBase<FloatType> {
 
     template <typename OtherType>
     __host__ __device__
-    FloatGrad& operator=(const OtherType& other) {
+    FloatGrad& operator=(const OtherType& other) & {
         FloatGradBase<FloatType>::operator=(other);
         return *this;
+    }
+
+    template <typename OtherType>
+    __host__ __device__
+    FloatGrad&& operator=(const OtherType& other) && {
+        FloatGradBase<FloatType>::operator=(other);
+        return std::move(*this);
     }
 };
 
@@ -197,6 +221,23 @@ struct FloatGradArray {
     __host__ __device__
     FloatGradRef<const FloatType> operator[](int index) const {
         return FloatGradRef<const FloatType>(data_arr_ + index, grad_arr_ + index);
+    }
+
+    __host__ __device__
+    FloatType* data_ptr() {
+        return data_arr_;
+    }
+    __host__ __device__
+    const FloatType* data_ptr() const {
+        return data_arr_;
+    }
+    __host__ __device__
+    FloatType* grad_ptr() {
+        return grad_arr_;
+    }
+    __host__ __device__
+    const FloatType* grad_ptr() const {
+        return grad_arr_;
     }
 };
 
@@ -253,7 +294,7 @@ FloatGradBase<FloatType>::FloatGradBase(Args&&... args)
 template <typename FloatType>
 template <typename OtherType>
 __host__ __device__
-FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherType& other) {
+FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherType& other) & {
     this->data() = get_data(other);
     this->grad() = get_grad(other);
     return *this;
@@ -262,10 +303,28 @@ FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherT
 template <typename FloatType>
 template <typename OtherType>
 __host__ __device__
-FloatGradBase<FloatType>& FloatGradBase<FloatType>::operator=(const OtherType& other) {
+FloatGradRefBase<FloatType>&& FloatGradRefBase<FloatType>::operator=(const OtherType& other) && {
+    this->data() = get_data(other);
+    this->grad() = get_grad(other);
+    return std::move(*this);
+}
+
+template <typename FloatType>
+template <typename OtherType>
+__host__ __device__
+FloatGradBase<FloatType>& FloatGradBase<FloatType>::operator=(const OtherType& other) & {
     this->data() = get_data(other);
     this->grad() = get_grad(other);
     return *this;
+}
+
+template <typename FloatType>
+template <typename OtherType>
+__host__ __device__
+FloatGradBase<FloatType>&& FloatGradBase<FloatType>::operator=(const OtherType& other) && {
+    this->data() = get_data(other);
+    this->grad() = get_grad(other);
+    return std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////////
