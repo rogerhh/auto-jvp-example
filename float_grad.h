@@ -212,7 +212,7 @@ struct FloatGrad : public FloatGradBase<FloatType> {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__host__ __device__
+inline __host__ __device__
 decltype(auto) get_data(const T& t) {
     if constexpr (is_float_grad<T>::value) {
         return t.data();
@@ -222,7 +222,7 @@ decltype(auto) get_data(const T& t) {
 }
 
 template <typename T>
-__host__ __device__
+inline __host__ __device__
 decltype(auto) get_grad(const T& t) {
     if constexpr (is_float_grad<T>::value) {
         return t.grad();

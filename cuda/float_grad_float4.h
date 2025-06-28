@@ -1,6 +1,18 @@
 #ifndef FLOAT_GRAD_FLOAT4_H
 #define FLOAT_GRAD_FLOAT4_H
 
+// Specialization for get_grad
+template <>
+inline __host__ __device__
+decltype(auto) get_grad<float4>(const float4& v) {
+    return float4{0.0f, 0.0f, 0.0f, 0.0f};
+}
+template <>
+inline __host__ __device__
+decltype(auto) get_grad<const float4>(const float4& v) {
+    return float4{0.0f, 0.0f, 0.0f, 0.0f};
+}
+
 template <typename T>
 using is_float4_type = std::is_same<std::decay_t<decltype(get_data(std::declval<T>()))>, float4>;
 
