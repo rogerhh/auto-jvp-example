@@ -1,11 +1,11 @@
 #ifndef FLOAT_GRAD_ARRAY_H
 #define FLOAT_GRAD_ARRAY_H
 
-std::false_type is_float_grad_array_impl(const void*);
-template <typename T>
-std::true_type is_float_grad_array_impl(const FloatGradArray<T>*);
-template <typename T>
-using is_float_grad_array = decltype(is_float_grad_array_impl(std::declval<T*>()));
+// std::false_type is_float_grad_array_impl(const void*);
+// template <typename T>
+// std::true_type is_float_grad_array_impl(const FloatGradArray<T>*);
+// template <typename T>
+// using is_float_grad_array = decltype(is_float_grad_array_impl(std::declval<T*>()));
 
 template <typename FloatType>
 struct FloatGradArray {
@@ -13,8 +13,45 @@ struct FloatGradArray {
     FloatType* grad_arr_;
 
     __host__ __device__
+    FloatGradArray() : data_arr_(nullptr), grad_arr_(nullptr) {}
+
+    __host__ __device__
     FloatGradArray(FloatType* data, FloatType* grad)
         : data_arr_(data), grad_arr_(grad) {}
+
+    __host__ __device__
+    FloatGradArray& operator=(const FloatGradArray& other) {
+        data_arr_ = other.data_arr_;
+        grad_arr_ = other.grad_arr_;
+        return *this;
+    }
+
+    template <typename OtherType,
+              typename = std::enable_if_t<is_float_grad_array<OtherType>::value>>
+    __host__ __device__
+    FloatGradArray& operator=(const OtherType& other) {
+        data_arr_ = other.data_ptr();
+        grad_arr_ = other.grad_ptr();
+        return *this;
+    }
+
+    template <typename OtherType,
+              typename = std::enable_if_t<is_float_grad_array<OtherType>::value>>
+    __host__ __device__
+    bool operator==(const OtherType& other) {
+        return data_arr_ == other.data_ptr() 
+               && grad_arr_ == other.grad_ptr();
+    }
+
+    __host__ __device__
+    FloatGradRef<FloatType> operator*() {
+        return FloatGradRef<FloatType>(data_arr_, grad_arr_);
+    }
+
+    __host__ __device__
+    FloatGradRef<const FloatType> operator*() const {
+        return FloatGradRef<const FloatType>(data_arr_, grad_arr_);
+    }
 
     __host__ __device__
     FloatGradRef<FloatType> operator[](int index) {
@@ -35,8 +72,9 @@ struct FloatGradArray {
         );
     }
 
+    template <typename OffsetType>
     __host__ __device__
-    FloatGradArray operator+(int offset) const {
+    FloatGradArray operator+(OffsetType offset) const {
         return FloatGradArray(data_arr_ + offset, grad_arr_ + offset);
     }
 

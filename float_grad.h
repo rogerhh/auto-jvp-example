@@ -42,6 +42,12 @@ std::true_type is_float_grad_ref_impl(const FloatGradRefBase<T>*);
 template <typename T>
 using is_float_grad_ref = decltype(is_float_grad_ref_impl(std::declval<T*>()));
 
+std::false_type is_float_grad_array_impl(const void*);
+template <typename T>
+std::true_type is_float_grad_array_impl(const FloatGradArray<T>*);
+template <typename T>
+using is_float_grad_array = decltype(is_float_grad_array_impl(std::declval<T*>()));
+
 /////////////////////////////////////////////////////////////////////////////
 /// Class definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -134,6 +140,7 @@ struct FloatGradBase {
     FloatGradBase(const T1& data, const T2& grad)
         : data_(data), grad_(grad) {}
 
+    __host__ __device__
     FloatGradBase(const FloatGradBase<FloatType>& other)
         : data_(other.data_), grad_(other.grad_) {}
 
@@ -232,6 +239,16 @@ decltype(auto) get_grad(const T& t) {
     }
     else {
         static_assert(always_false<T>::value, "Unsupported type for get_grad");
+    }
+}
+
+template <typename T>
+inline __host__ __device__
+decltype(auto) get_data_ptr(const T& t) {
+    if constexpr (is_float_grad_array<T>::value) {
+        return t.data_ptr();
+    } else {
+        return t;
     }
 }
 
@@ -338,18 +355,33 @@ template <typename T1, typename T2,
           typename = std::enable_if_t<is_float_grad<T1>::value
                                       || is_float_grad<T2>::value>>
 __host__ __device__
-auto operator+(const T1& a, const T2& b) {
-    auto data = get_data<T1>(a) + get_data<T2>(b);
-    decltype(data) grad;
-    if constexpr (is_float_grad<T1>::value 
-        && is_float_grad<T2>::value) {
-        grad = a.grad() + b.grad();
-    } else if constexpr (is_float_grad<T1>::value) {
-        grad = a.grad();
-    } else {
-        grad = b.grad();
+auto operator+(T1 a, T2 b) {
+    // TODO: This is ugly. Fix later
+    if constexpr (is_float_grad_array<T1>::value 
+                  || is_float_grad_array<T2>::value) {
+        if constexpr (is_float_grad_array<T1>::value) {
+            static_assert(!is_float_grad<T2>::value, 
+                          "Cannot add FloatGradArray to FloatGrad");
+            return T1(a.data_ptr() + b, a.grad_ptr() + b);
+        } else {
+            static_assert(!is_float_grad<T1>::value, 
+                          "Cannot add FloatGrad to FloatGradArray");
+            return T2(b.data_ptr() + a, b.grad_ptr() + a);
+        }
+    } 
+    else { 
+        auto data = get_data<T1>(a) + get_data<T2>(b);
+        decltype(data) grad;
+        if constexpr (is_float_grad<T1>::value 
+            && is_float_grad<T2>::value) {
+            grad = a.grad() + b.grad();
+        } else if constexpr (is_float_grad<T1>::value) {
+            grad = a.grad();
+        } else {
+            grad = b.grad();
+        }
+        return FloatGrad<decltype(data)>(data, grad);
     }
-    return FloatGrad<decltype(data)>(data, grad);
 }
 
 template <typename T1, typename T2,
