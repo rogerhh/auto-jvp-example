@@ -64,12 +64,12 @@ struct FloatGradRefBase {
     FloatGradRefBase() = delete;
 
     // Base constructor
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradRefBase(FloatType* data_ptr, FloatType* grad_ptr)
         : data_ptr_(data_ptr), grad_ptr_(grad_ptr) {}
 
     // Copy constructor
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradRefBase(const FloatGradRefBase& other)
         : data_ptr_(other.data_ptr_), grad_ptr_(other.grad_ptr_) {}
 
@@ -77,7 +77,7 @@ struct FloatGradRefBase {
     template <typename U = FloatType, 
               typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
                                                          std::remove_const_t<FloatType>>>>
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradRefBase(const FloatGradRefBase<U>& other)
         : data_ptr_(other.data_ptr_), grad_ptr_(other.grad_ptr_) {}
 
@@ -127,7 +127,7 @@ struct FloatGradBase {
     template <typename U = FloatType, 
               typename = std::enable_if_t<std::is_same_v<std::remove_const_t<U>, 
                                                          std::remove_const_t<FloatType>>>>
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradBase(const FloatGradBase<U>& other)
         : data_(other.data_), grad_(other.grad_) {}
 
@@ -136,11 +136,11 @@ struct FloatGradBase {
                                                        std::decay_t<FloatType>>::value
                                           && std::is_same<std::decay_t<T2>, 
                                                           std::decay_t<FloatType>>::value>>
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradBase(const T1& data, const T2& grad)
         : data_(data), grad_(grad) {}
 
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradBase(const FloatGradBase<FloatType>& other)
         : data_(other.data_), grad_(other.grad_) {}
 
@@ -150,7 +150,7 @@ struct FloatGradBase {
     std::enable_if_t<!(sizeof...(Args) == 2 &&
                        std::conjunction_v<std::is_same<std::decay_t<Args>, 
                                                        std::decay_t<FloatType>>...>), int> = 0>
-    __host__ __device__
+    __noinline__ __host__ __device__
     FloatGradBase(Args&&... args);
 
     template <typename OtherType>
@@ -261,17 +261,15 @@ FloatGradRefBase<FloatType>::~FloatGradRefBase() = default; // Default destructo
 template <typename FloatType>
 FloatGradBase<FloatType>::~FloatGradBase() = default; // Default destructor
 
+// Note: This needs to be marked __noinline__ to prevent incorrect compiler optimizations
 template <typename FloatType>
 template <typename... Args,
 std::enable_if_t<!(sizeof...(Args) == 2 &&
                    std::conjunction_v<std::is_same<std::decay_t<Args>, 
                                                    std::decay_t<FloatType>>...>), int>>
-__host__ __device__
+__noinline__ __host__ __device__
 FloatGradBase<FloatType>::FloatGradBase(Args&&... args)
-: data_(get_data(std::forward<Args>(args))...), grad_(get_grad(std::forward<Args>(args))...) {
-    // static_assert(always_false<FloatType>::value, "debug");
-
-}
+: data_(get_data(std::forward<Args>(args))...), grad_(get_grad(std::forward<Args>(args))...) {}
 
 template <typename FloatType>
 template <typename OtherType>
