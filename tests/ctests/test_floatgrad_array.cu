@@ -37,6 +37,22 @@ TEST(FloatGradTest, ScalarArrayOperators) {
 
 }
 
+TEST(FloatGradTest, EqualityOperator) {
+    FloatGradArray<float> a(nullptr, nullptr);
+
+    EXPECT_TRUE(a == nullptr);
+
+    float b_data[10] = {2.0f, 4.0f, 6.0f, 8.0f, 10.0f,
+                            12.0f, 14.0f, 16.0f, 18.0f, 20.0f};
+    float b_grad[10] = {0.5f, 0.4f, 0.3f, 0.2f, 0.1f,
+                            0.05f, 0.04f, 0.03f, 0.02f, 0.01f};
+
+    FloatGradArray<float> b(b_data, b_grad);
+
+    EXPECT_TRUE(a != b);
+    
+}
+
 TEST(FloatGradTest, ScalarArrayCompoundOperators) {
     float a_data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                             6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
@@ -165,7 +181,11 @@ TEST(FloatGradTest, ArrayElementAssignment) {
     }
 
     for(int i = 0; i < 10; i++) {
-        EXPECT_TRUE(float_eq(a[i], b[i]));
+        EXPECT_TRUE(float_eq(a[i], b[i])) << " at index " << i 
+                      << ": a[" << i << "] = " << a[i].data() 
+                      << ", " << a[i].grad() 
+                      << "; b[" << i << "] = " << b[i].data() 
+                      << ", " << b[i].grad();
     }
 
 
@@ -208,6 +228,23 @@ TEST(FloatGradTest, ArrayElementAssignmentVec2) {
 
 }
 
+TEST(FloatGradTest, RvalueAssignment) {
+    float a_data[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    float a_grad[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+    FloatGrad<float> T(3.0f, 0.5f);
+
+    FloatGradArray<float> a(a_data, a_grad);
+
+    a[3] = 1 - T;
+
+    std::cout << "a[3] = " << a[3].data() << ", " << a[3].grad() << std::endl;
+
+
+}
+
 TEST(FloatGradTest, ArrayOffset) {
     float a_data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                         6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
@@ -224,3 +261,40 @@ TEST(FloatGradTest, ArrayOffset) {
 
 }
 
+
+TEST(FloatGradTest, ArrayOffsetAndReinterpret) {
+    // This is a specific case for Gaussian Splatting
+    float a_data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                        6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
+    float a_grad[10] = {1.0f, 0.9f, 0.8f, 0.7f, 0.6f,
+                        0.5f, 0.4f, 0.3f, 0.2f, 0.1f};
+
+    const FloatGradArray<float> a(a_data, a_grad);
+
+    uint32_t i_ref = *((uint32_t*) &a_data[5]);
+
+    uint32_t i = *((uint32_t*) &a.data_ptr()[5]);
+
+    EXPECT_FLOAT_EQ(i, i_ref);
+
+}
+
+TEST(FloatGradTest, VanillaFloatGradArray) {
+    // FloatGradArray not using container
+    float a_data[10] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                        6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
+    float a_grad[10] = {1.0f, 0.9f, 0.8f, 0.7f, 0.6f,
+                        0.5f, 0.4f, 0.3f, 0.2f, 0.1f};
+
+    FloatGrad<float> a_arr[10];
+
+    for(int i = 0; i < 10; i++) {
+        a_arr[i] = FloatGrad<float>(a_data[i], a_grad[i]);
+    }
+
+    for(int i = 0; i < 10; i++) {
+        std::cout << "a_arr[" << i << "] = " 
+                  << a_arr[i].data() << ", " 
+                  << a_arr[i].grad() << std::endl;
+    }
+}
