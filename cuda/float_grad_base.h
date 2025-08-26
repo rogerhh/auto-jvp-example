@@ -85,7 +85,7 @@ struct FloatGradRefBase {
     // Use the FloatGrad.ref() function
 
     // Default assignment operator
-    __host__ __device__
+    __forceinline__ __host__ __device__
     FloatGradRefBase& operator=(const FloatGradRefBase& other) {
         this->data() = other.data();
         this->grad() = other.grad();
@@ -122,6 +122,8 @@ struct FloatGradBase {
     // Virtual destructor for pure abstract base class
     // virtual ~FloatGradBase() = 0;
     ~FloatGradBase();
+
+    FloatGradBase() {}
 
     // Copy constructor
     template <typename U = FloatType, 
@@ -258,13 +260,14 @@ template <typename... Args,
 std::enable_if_t<!(sizeof...(Args) == 2 &&
                    std::conjunction_v<std::is_same<std::decay_t<Args>, 
                                                    std::decay_t<FloatType>>...>), int>>
-__noinline__ __host__ __device__
+// __noinline__ __host__ __device__
+__forceinline__ __host__ __device__
 FloatGradBase<FloatType>::FloatGradBase(Args&&... args)
-: data_(get_data(std::forward<Args>(args))...), grad_(get_grad(std::forward<Args>(args))...) {}
+: data_{get_data(std::forward<Args>(args))...}, grad_{get_grad(std::forward<Args>(args))...} {}
 
 template <typename FloatType>
 template <typename OtherType>
-__host__ __device__
+__forceinline__ __host__ __device__
 FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherType& other) {
     this->data() = get_data(other);
     this->grad() = get_grad(other);
@@ -273,7 +276,7 @@ FloatGradRefBase<FloatType>& FloatGradRefBase<FloatType>::operator=(const OtherT
 
 template <typename FloatType>
 template <typename OtherType>
-__host__ __device__
+__forceinline__ __host__ __device__
 FloatGradBase<FloatType>& FloatGradBase<FloatType>::operator=(const OtherType& other) {
     this->data() = get_data(other);
     this->grad() = get_grad(other);

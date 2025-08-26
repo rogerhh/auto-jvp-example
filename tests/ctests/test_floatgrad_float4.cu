@@ -17,6 +17,18 @@ TEST(FloatGradFloat4, MakeFloat4) {
 
 }
 
+TEST(FloatGradFloat4, Float4Ctor) {
+    FloatGrad<float> ax(1.0f, 0.1f);
+    float ay = 2.0f;
+    FloatGrad<float> az(4.0f, 0.4f);
+    float aw = 6.0f;
+    FloatGrad<float4> a(ax, ay, az, aw);
+
+    EXPECT_TRUE(float_eq(a, FloatGrad<float4>(make_float4(1.0f, 2.0f, 4.0f, 6.0f), 
+                                              make_float4(0.1f, 0.0f, 0.4f, 0.0f))));
+
+}
+
 TEST(FloatGradFloat4, VectorElementAccess) {
     float4 a_data = make_float4(1.0f, 2.0f, 5.0f, -4.0f);
     float4 a_grad = make_float4(0.1f, 0.2f, 0.5f, -0.4f);
